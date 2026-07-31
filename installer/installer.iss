@@ -240,7 +240,9 @@ var
   Lines: TArrayOfString;
   ServerUrl: String;
 begin
-  ServerUrl := ServerUrlPage.Values[0];
+  ServerUrl := Trim(ServerUrlPage.Values[0]);
+  while (Length(ServerUrl) > 0) and (Copy(ServerUrl, Length(ServerUrl), 1) = '/') do
+    Delete(ServerUrl, Length(ServerUrl), 1);
   ConfigPath := ExpandConstant('{app}\agent-svc.xml');
 
   SetArrayLength(Lines, 19);

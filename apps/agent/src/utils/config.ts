@@ -100,7 +100,7 @@ const env = ConfigSchema.parse(process.env)
 const agentConfig = loadOrCreateAgentConfig()
 
 export const config = {
-  serverUrl: env.SERVER_URL ?? '',
+  serverUrl: (env.SERVER_URL ?? '').replace(/\/+$/, ''),
   deviceId: agentConfig.deviceId,
   agentToken: agentConfig.agentToken,
   secret: agentConfig.secret,
