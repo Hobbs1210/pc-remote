@@ -1,5 +1,5 @@
 #define MyAppName "PC Remote Agent"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "0.0.2"
 #define MyAppPublisher "PC Remote"
 #define MyAppExeName "agent.exe"
 #define MyServiceName "PCRemoteAgent"
