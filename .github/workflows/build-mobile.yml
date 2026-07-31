@@ -60,10 +60,22 @@ jobs:
           cd apps/mobile
           eas build --platform android --profile preview --non-interactive
 
+      - name: Build APK with Local Gradle (No EXPO_TOKEN required)
+        if: ${{ env.EXPO_TOKEN == '' }}
+        run: |
+          cd apps/mobile
+          npx expo prebuild --platform android --clean
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
 
       - name: Upload mobile build artifact
         uses: actions/upload-artifact@v4
         with:
           name: pc-remote-mobile-app
-          path: apps/mobile
+          path: |
+            apps/mobile/android/app/build/outputs/apk/release/*.apk
+            apps/mobile/android/app/build/outputs/apk/debug/*.apk
+            apps/mobile/*.apk
           retention-days: 30
+          if-no-files-found: warn
