@@ -47,7 +47,7 @@ services:
     ports:
       - "${WEB_PORT:-8877}:80"
     environment:
-      SERVER_URL: ${SERVER_URL:-http://localhost:3300}
+      EXPO_PUBLIC_SERVER_URL: ${EXPO_PUBLIC_SERVER_URL:-http://backend:3300}
     depends_on:
       backend:
         condition: service_healthy
