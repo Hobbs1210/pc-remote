@@ -1,16 +1,15 @@
 import { execSync } from 'node:child_process'
 import { log as logger } from '../utils/logger.js'
 import { setPendingLock, setPendingVolume, setPendingScreenshot } from '../local-server.js'
-import { killProcess } from '../utils/sysinfo.js'
+import { killProcess, setVolumeLevel } from '../utils/sysinfo.js'
 import type { CommandPayload } from '@pc-remote/shared'
 
-export async function executeCommand(payload: CommandPayload): Promise<void> {
-  const { type, delaySeconds = 0, message, pid } = payload
+export async function executeCommand(payload: CommandPayload): Promise<string | void> {
+  const { type, delaySeconds = 0, message, pid, commandText, volumePercent } = payload
 
   logger.info({ type, delaySeconds, pid }, 'Executing command')
 
-  if (process.platform !== 'win32' && type !== 'KILL_PROCESS') {
-    // In dev mode, log execution
+  if (process.platform !== 'win32' && type !== 'KILL_PROCESS' && type !== 'EXEC_TERMINAL') {
     logger.info(`[DEV MODE] Would execute: ${type} after ${delaySeconds}s`)
     return
   }
@@ -62,6 +61,12 @@ export async function executeCommand(payload: CommandPayload): Promise<void> {
       setPendingVolume('MUTE')
       break
 
+    case 'SET_VOLUME':
+      if (volumePercent !== undefined) {
+        setVolumeLevel(volumePercent)
+      }
+      break
+
     case 'SCREENSHOT':
       setPendingScreenshot()
       break
@@ -85,10 +90,26 @@ export async function executeCommand(payload: CommandPayload): Promise<void> {
       }
       break
 
+    case 'EXEC_TERMINAL':
+      if (commandText) {
+        try {
+          const output = execSync(
+            `powershell.exe -NonInteractive -NoProfile -Command "${commandText.replace(/"/g, '""')}"`,
+            { encoding: 'utf-8', timeout: 15000, windowsHide: true }
+          )
+          return output
+        } catch (err: unknown) {
+          const errorOutput = err && typeof err === 'object' && 'stdout' in err ? String((err as { stdout: unknown }).stdout) : String(err)
+          return `Error executing command: ${errorOutput}`
+        }
+      }
+      break
+
     default:
       logger.warn({ type }, 'Unknown command type')
   }
 }
+
 
 
 

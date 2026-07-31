@@ -53,9 +53,11 @@ model Device {
   uptime       Int?
   activeUsers  Json     @default("[]")
   disks        Json     @default("[]")
+  activeWindow Json     @default("{}")
   macAddress   String?
 
   screenshotImage String?   // base64 JPEG
+
 
   screenshotAt    DateTime? // серверное время получения
 
@@ -101,8 +103,11 @@ model Schedule {
   downtime  Json     @default("{}")
   // Дневной лимит: { enabled, minutesWeekday, minutesWeekend }
   dailyLimit Json    @default("{}")
+  // Заблокированные приложения: ["chrome.exe", "game.exe"]
+  blockedApps Json   @default("[]")
 
   updatedAt DateTime @updatedAt
+
 }
 
 model Override {

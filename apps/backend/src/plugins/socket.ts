@@ -88,7 +88,7 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
         return
       }
 
-      const { cpuPercent, ramPercent, uptime, activeUsers, agentVersion, disks, macAddress } =
+      const { cpuPercent, ramPercent, uptime, activeUsers, agentVersion, disks, macAddress, activeWindow } =
         parsed.data
 
       await (app.prisma as PrismaClient).device.update({
@@ -103,6 +103,7 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
           agentVersion,
           ...(disks !== undefined && { disks }),
           ...(macAddress !== undefined && { macAddress }),
+          ...(activeWindow !== undefined && { activeWindow }),
         },
       })
     })
@@ -116,7 +117,7 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
         return
       }
 
-      const { commandId, success, error, executedAt } = parsed.data
+      const { commandId, success, error, output, executedAt } = parsed.data
 
       await (app.prisma as PrismaClient).command.update({
         where: { id: commandId },
@@ -124,6 +125,7 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
           status: success ? 'executed' : 'failed',
           executedAt: new Date(executedAt),
           error: error ?? null,
+          ...(output !== undefined && { payload: { output } }),
         },
       })
 

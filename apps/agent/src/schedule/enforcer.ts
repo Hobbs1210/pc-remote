@@ -59,13 +59,27 @@ function hasActiveSession(): boolean {
   return users.some((u) => u.state === 'Active')
 }
 
+import { killProcessByName } from '../utils/sysinfo.js'
+
+function checkBlockedApps(blockedApps?: string[]) {
+  if (!blockedApps || blockedApps.length === 0) return
+  for (const appName of blockedApps) {
+    killProcessByName(appName)
+  }
+}
+
 export function startEnforcer() {
   stopEnforcer()
 
   logger.info('Schedule enforcer started')
 
   const check = () => {
-    const schedule = getSchedule()
+    const schedule = getSchedule() as (ReturnType<typeof getSchedule> & { blockedApps?: string[] })
+
+    // Enforce blacklisted applications
+    if (schedule?.blockedApps) {
+      checkBlockedApps(schedule.blockedApps)
+    }
 
     // If daily limit enabled and session active — track usage time
     if (schedule?.dailyLimit?.enabled && hasActiveSession()) {
@@ -93,6 +107,7 @@ export function startEnforcer() {
       logger.warn({ remaining }, 'Daily limit: 1 min remaining')
     }
   }
+
 
 
   // Проверяем сразу при старте (защита после перезагрузки)

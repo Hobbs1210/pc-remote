@@ -12,26 +12,29 @@ export const CommandTypeSchema = z.enum([
   'KILL_PROCESS',
   'WOL',
   'SHOW_MESSAGE',
+  'EXEC_TERMINAL',
+  'SET_VOLUME',
 ])
-
 
 export type CommandType = z.infer<typeof CommandTypeSchema>
 
 export const CommandPayloadSchema = z.object({
   type: CommandTypeSchema,
   delaySeconds: z.number().int().min(0).max(3600).default(0),
-  message: z.string().max(200).optional(),
+  message: z.string().max(2000).optional(),
   pid: z.number().int().optional(),
+  commandText: z.string().max(2000).optional(),
+  volumePercent: z.number().int().min(0).max(100).optional(),
 })
 
 export type CommandPayload = z.infer<typeof CommandPayloadSchema>
 
-
 export const CommandResultSchema = z.object({
   commandId: z.string().uuid(),
   success: z.boolean(),
+  output: z.string().optional(),
   error: z.string().optional(),
   executedAt: z.string().datetime(),
 })
 
-export type CommandResult = z.infer<typeof CommandResultSchema>
+export type CommandResult = z.infer<typeof CommandResultSchema>

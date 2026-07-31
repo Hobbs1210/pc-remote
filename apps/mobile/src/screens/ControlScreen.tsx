@@ -121,7 +121,7 @@ function DiskRow({ disk }: { disk: DiskInfo }) {
 
 export default function ControlScreen({ route }: Props) {
   const { deviceId, deviceName } = route.params
-  const { sendCommand, showMessage, wakeOnLan, devices, localUsers, fetchLocalUsers, fetchScreenshot } = useDevicesStore()
+  const { sendCommand, showMessage, wakeOnLan, execTerminal, setVolumeLevel, devices, localUsers, fetchLocalUsers, fetchScreenshot } = useDevicesStore()
   const navigation = useNavigation<Nav>()
   const device = devices.find((d) => d.id === deviceId)
   const deviceLocalUsers = localUsers[deviceId] ?? []
@@ -138,7 +138,31 @@ export default function ControlScreen({ route }: Props) {
   const [screenshotLoading, setScreenshotLoading] = useState(false)
   const [messageModal, setMessageModal] = useState(false)
   const [customMessage, setCustomMessage] = useState('')
+  const [terminalModal, setTerminalModal] = useState(false)
+  const [terminalCommand, setTerminalCommand] = useState('')
+  const [terminalLogs, setTerminalLogs] = useState<string[]>(['PS > Connected to PC Remote Console'])
+  const [terminalRunning, setTerminalRunning] = useState(false)
   const screenshotPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const runTerminalCommand = async () => {
+    if (!terminalCommand.trim() || terminalRunning) return
+    const cmd = terminalCommand.trim()
+    setTerminalLogs((prev) => [...prev, `PS > ${cmd}`])
+    setTerminalCommand('')
+    setTerminalRunning(true)
+    try {
+      const res = await execTerminal(deviceId, cmd)
+      if (res.delivered) {
+        setTerminalLogs((prev) => [...prev, `[Command sent - Output will appear in history]`])
+      } else {
+        setTerminalLogs((prev) => [...prev, `[Device Offline - Queued]`])
+      }
+    } catch {
+      setTerminalLogs((prev) => [...prev, `[Error sending command]`])
+    } finally {
+      setTerminalRunning(false)
+    }
+  }
 
   const sendCustomMessage = async () => {
     if (!customMessage.trim()) return
@@ -160,6 +184,7 @@ export default function ControlScreen({ route }: Props) {
       Alert.alert('Error', 'Failed to send Wake-on-LAN packet')
     }
   }
+
 
 
   const handleKillProcess = (pid: number, name: string) => {
@@ -280,22 +305,33 @@ export default function ControlScreen({ route }: Props) {
         </View>
 
         {device?.status === 'online' && (
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.statVal}>{device.cpuPercent}%</Text>
-              <Text style={styles.statLbl}>CPU</Text>
+          <>
+            <View style={styles.statsRow}>
+              <View style={styles.statBox}>
+                <Text style={styles.statVal}>{device.cpuPercent}%</Text>
+                <Text style={styles.statLbl}>CPU</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={styles.statVal}>{device.ramPercent}%</Text>
+                <Text style={styles.statLbl}>RAM</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={styles.statVal}>
+                  {Math.floor((device.uptime ?? 0) / 3600)}h
+                </Text>
+                <Text style={styles.statLbl}>Uptime</Text>
+              </View>
             </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statVal}>{device.ramPercent}%</Text>
-              <Text style={styles.statLbl}>RAM</Text>
-            </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statVal}>
-                {Math.floor((device.uptime ?? 0) / 3600)}h
-              </Text>
-              <Text style={styles.statLbl}>Uptime</Text>
-            </View>
-          </View>
+
+            {device.activeWindow?.title ? (
+              <View style={styles.activeWindowBox}>
+                <Text style={styles.activeWindowLbl}>ACTIVE APP</Text>
+                <Text style={styles.activeWindowVal} numberOfLines={1}>
+                  🖥 {device.activeWindow.title}
+                </Text>
+              </View>
+            ) : null}
+          </>
         )}
       </View>
 
@@ -344,10 +380,10 @@ export default function ControlScreen({ route }: Props) {
           onPress={() => void executeCommand('VOLUME_UP', 0)}
         />
         <CommandButton
-          label="Mute"
-          emoji="🔇"
-          color="#888"
-          onPress={() => void executeCommand('VOLUME_MUTE', 0)}
+          label="Terminal"
+          emoji="⌨️"
+          color="#4ade80"
+          onPress={() => setTerminalModal(true)}
         />
         <CommandButton
           label="Screenshot"
@@ -358,7 +394,7 @@ export default function ControlScreen({ route }: Props) {
         <CommandButton
           label="Message"
           emoji="💬"
-          color="#4ade80"
+          color="#38bdf8"
           onPress={() => setMessageModal(true)}
         />
         <CommandButton
@@ -368,6 +404,7 @@ export default function ControlScreen({ route }: Props) {
           onPress={() => void triggerWol()}
         />
       </View>
+
 
 
       {/* Disks */}
@@ -475,8 +512,49 @@ export default function ControlScreen({ route }: Props) {
         </View>
       </Modal>
 
+      {/* Terminal Modal */}
+      <Modal visible={terminalModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { height: '80%', padding: 16 }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={styles.modalTitle}>PowerShell Remote Console</Text>
+              <TouchableOpacity onPress={() => setTerminalModal(false)}>
+                <Text style={{ color: '#888', fontSize: 18 }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.terminalBox} contentContainerStyle={{ padding: 12 }}>
+              {terminalLogs.map((log, i) => (
+                <Text key={i} style={styles.terminalLine}>{log}</Text>
+              ))}
+            </ScrollView>
+
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+              <TextInput
+                style={[styles.modalInput, { flex: 1, marginBottom: 0, fontFamily: 'monospace' }]}
+                value={terminalCommand}
+                onChangeText={setTerminalCommand}
+                placeholder="e.g. ipconfig, Get-Service"
+                placeholderTextColor="#666"
+                autoCapitalize="none"
+                autoCorrect={false}
+                onSubmitEditing={() => void runTerminalCommand()}
+              />
+              <TouchableOpacity
+                style={[styles.modalConfirm, { width: 70, justifyContent: 'center' }]}
+                onPress={() => void runTerminalCommand()}
+                disabled={terminalRunning}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Run</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Message Modal */}
       <Modal visible={messageModal} transparent animationType="fade">
+
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Send Message Banner</Text>
@@ -569,6 +647,23 @@ const styles = StyleSheet.create({
   statBox: { alignItems: 'center' },
   statVal: { color: '#6c63ff', fontSize: 20, fontWeight: '700' },
   statLbl: { color: '#666', fontSize: 12, marginTop: 2 },
+  activeWindowBox: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#222',
+  },
+  activeWindowLbl: { color: '#666', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  activeWindowVal: { color: '#fff', fontSize: 13, fontWeight: '500', marginTop: 4 },
+  terminalBox: {
+    flex: 1,
+    backgroundColor: '#0a0a16',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#222',
+  },
+  terminalLine: { color: '#4ade80', fontSize: 12, fontFamily: 'monospace', marginBottom: 4 },
+
   sectionTitle: {
     color: '#888',
     fontSize: 13,

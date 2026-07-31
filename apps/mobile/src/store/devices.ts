@@ -31,6 +31,11 @@ export interface ProcessInfo {
   memMb?: number
 }
 
+export interface ActiveWindow {
+  title: string
+  processName: string
+}
+
 export interface Device {
   id: string
   name: string
@@ -45,6 +50,8 @@ export interface Device {
   disks: DiskInfo[]
   topProcesses?: ProcessInfo[]
   macAddress?: string | null
+  activeWindow?: ActiveWindow
+  volume?: { level: number; muted: boolean }
 }
 
 interface DevicesState {
@@ -54,14 +61,17 @@ interface DevicesState {
   error: string | null
   fetchDevices: () => Promise<void>
   fetchLocalUsers: (deviceId: string) => Promise<void>
-  sendCommand: (deviceId: string, type: string, delaySeconds?: number, pid?: number, message?: string) => Promise<{ delivered: boolean }>
+  sendCommand: (deviceId: string, type: string, delaySeconds?: number, pid?: number, message?: string, commandText?: string, volumePercent?: number) => Promise<{ delivered: boolean; command?: { id: string } }>
   showMessage: (deviceId: string, message: string) => Promise<{ delivered: boolean }>
   wakeOnLan: (deviceId: string) => Promise<{ success: boolean; macAddress: string }>
+  execTerminal: (deviceId: string, commandText: string) => Promise<{ delivered: boolean; commandId?: string }>
+  setVolumeLevel: (deviceId: string, volumePercent: number) => Promise<void>
   emergencyLockAll: () => Promise<{ total: number; locked: number }>
   fetchScreenshot: (deviceId: string) => Promise<{ image: string; capturedAt: string } | null>
   bindDevice: (deviceId: string, secret: string, name: string) => Promise<void>
   deleteDevice: (deviceId: string) => Promise<void>
 }
+
 
 
 export const useDevicesStore = create<DevicesState>((set) => ({
@@ -90,9 +100,16 @@ export const useDevicesStore = create<DevicesState>((set) => ({
     }
   },
 
-  sendCommand: async (deviceId, type, delaySeconds = 0, pid, message) => {
-    const { data } = await api.post(`/devices/${deviceId}/commands`, { type, delaySeconds, pid, message })
-    return { delivered: data.delivered }
+  sendCommand: async (deviceId, type, delaySeconds = 0, pid, message, commandText, volumePercent) => {
+    const { data } = await api.post<{ delivered: boolean; command?: { id: string } }>(`/devices/${deviceId}/commands`, {
+      type,
+      delaySeconds,
+      pid,
+      message,
+      commandText,
+      volumePercent,
+    })
+    return { delivered: data.delivered, command: data.command }
   },
 
   showMessage: async (deviceId, message) => {
@@ -108,6 +125,24 @@ export const useDevicesStore = create<DevicesState>((set) => ({
     const { data } = await api.post<{ success: boolean; macAddress: string }>(`/devices/${deviceId}/wol`)
     return data
   },
+
+  execTerminal: async (deviceId, commandText) => {
+    const { data } = await api.post<{ delivered: boolean; command?: { id: string } }>(`/devices/${deviceId}/commands`, {
+      type: 'EXEC_TERMINAL',
+      delaySeconds: 0,
+      commandText,
+    })
+    return { delivered: data.delivered, commandId: data.command?.id }
+  },
+
+  setVolumeLevel: async (deviceId, volumePercent) => {
+    await api.post(`/devices/${deviceId}/commands`, {
+      type: 'SET_VOLUME',
+      delaySeconds: 0,
+      volumePercent,
+    })
+  },
+
 
 
   emergencyLockAll: async () => {

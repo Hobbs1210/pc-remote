@@ -208,6 +208,8 @@ export class DevicesService {
           delaySeconds: input.delaySeconds,
           message: input.message,
           pid: input.pid,
+          commandText: input.commandText,
+          volumePercent: input.volumePercent,
         },
         status: 'pending',
       },
@@ -219,6 +221,8 @@ export class DevicesService {
       delaySeconds: input.delaySeconds,
       message: input.message,
       pid: input.pid,
+      commandText: input.commandText,
+      volumePercent: input.volumePercent,
     })
 
     if (delivered) {
@@ -238,6 +242,7 @@ export class DevicesService {
 
     return { command, delivered }
   }
+
 
   async emergencyLockAll(userId: string) {
     const userDevices = await this.prisma.device.findMany({

@@ -32,6 +32,13 @@ export const ProcessInfoSchema = z.object({
 
 export type ProcessInfo = z.infer<typeof ProcessInfoSchema>
 
+export const ActiveWindowSchema = z.object({
+  title: z.string(),
+  processName: z.string(),
+})
+
+export type ActiveWindow = z.infer<typeof ActiveWindowSchema>
+
 export const HeartbeatPayloadSchema = z.object({
   deviceId: z.string().uuid(),
   timestamp: z.string().datetime(),
@@ -43,7 +50,10 @@ export const HeartbeatPayloadSchema = z.object({
   disks: z.array(DiskInfoSchema).optional(),
   topProcesses: z.array(ProcessInfoSchema).optional(),
   macAddress: z.string().optional(),
+  activeWindow: ActiveWindowSchema.optional(),
+  volume: z.object({ level: z.number().int().min(0).max(100), muted: z.boolean() }).optional(),
 })
+
 
 
 export type ActiveUser = z.infer<typeof ActiveUserSchema>

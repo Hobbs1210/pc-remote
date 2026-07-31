@@ -31,7 +31,9 @@ export const WeeklyScheduleSchema = z.object({
   timezone: z.string(), // 'Europe/Moscow', 'Europe/Riga' и т.д.
   downtime: DowntimeConfigSchema.optional(),
   dailyLimit: DailyLimitConfigSchema.optional(),
+  blockedApps: z.array(z.string()).optional(),
 })
+
 
 export const OverrideSchema = z.object({
   id: z.string().uuid(),

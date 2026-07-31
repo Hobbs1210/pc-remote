@@ -78,11 +78,15 @@ export default function ScheduleScreen({ route }: Props) {
   const [minutesWeekday, setMinutesWeekday] = useState('120')
   const [minutesWeekend, setMinutesWeekend] = useState('240')
 
+  // Blocked apps
+  const [blockedApps, setBlockedApps] = useState<string[]>([])
+  const [newAppName, setNewAppName] = useState('')
+
   useEffect(() => { void load() }, [])
 
   async function load() {
     try {
-      const { data } = await api.get<{ schedule?: DeviceSchedule | null }>(`/devices/${deviceId}`)
+      const { data } = await api.get<{ schedule?: (DeviceSchedule & { blockedApps?: string[] }) | null }>(`/devices/${deviceId}`)
       const s = data.schedule
       if (s) {
         setEnabled(s.enabled)
@@ -96,6 +100,9 @@ export default function ScheduleScreen({ route }: Props) {
           setLimitEnabled(s.dailyLimit.enabled)
           setMinutesWeekday(String(s.dailyLimit.minutesWeekday))
           setMinutesWeekend(String(s.dailyLimit.minutesWeekend))
+        }
+        if (s.blockedApps) {
+          setBlockedApps(s.blockedApps)
         }
       }
     } catch {
@@ -125,6 +132,7 @@ export default function ScheduleScreen({ route }: Props) {
         days,
         downtime: { enabled: downtimeEnabled, start: downtimeStart, end: downtimeEnd },
         dailyLimit: { enabled: limitEnabled, minutesWeekday: wd, minutesWeekend: we },
+        blockedApps,
       })
       Alert.alert('Saved', 'Schedule updated successfully')
     } catch {
@@ -133,6 +141,19 @@ export default function ScheduleScreen({ route }: Props) {
       setSaving(false)
     }
   }
+
+  function addBlockedApp() {
+    if (!newAppName.trim()) return
+    const name = newAppName.trim().toLowerCase().endsWith('.exe') ? newAppName.trim() : `${newAppName.trim()}.exe`
+    if (blockedApps.includes(name)) return
+    setBlockedApps((prev) => [...prev, name])
+    setNewAppName('')
+  }
+
+  function removeBlockedApp(name: string) {
+    setBlockedApps((prev) => prev.filter((a) => a !== name))
+  }
+
 
   // — Allowed hours helpers —
   function openAddForm(key: string) {
@@ -237,8 +258,42 @@ export default function ScheduleScreen({ route }: Props) {
         )}
       </View>
 
-      {/* ── 3. Allowed Hours ── */}
+      {/* ── 3. Blocked Applications ── */}
+      <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Blocked Applications</Text>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Executable Blacklist</Text>
+        <Text style={[styles.cardSub, { marginBottom: 12 }]}>
+          Automatically terminates process when launched
+        </Text>
+
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+          <TextInput
+            style={[styles.timeInputSlot, { flex: 1, textTransform: 'lowercase' }]}
+            value={newAppName}
+            onChangeText={setNewAppName}
+            placeholder="e.g. chrome.exe, game.exe"
+            placeholderTextColor="#555"
+            autoCapitalize="none"
+          />
+          <TouchableOpacity style={styles.confirmBtn} onPress={addBlockedApp}>
+            <Text style={styles.confirmBtnText}>+ Add</Text>
+          </TouchableOpacity>
+        </View>
+
+        {blockedApps.map((appName) => (
+          <View key={appName} style={styles.slotRow}>
+            <Text style={styles.slotTime}>🚫 {appName}</Text>
+            <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              onPress={() => removeBlockedApp(appName)}>
+              <Text style={styles.removeBtn}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+
+      {/* ── 4. Allowed Hours ── */}
       <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Allowed Hours</Text>
+
       <View style={styles.card}>
         <View style={styles.toggleRow}>
           <View style={{ flex: 1, marginRight: 12 }}>

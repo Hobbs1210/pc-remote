@@ -11,10 +11,11 @@ export const BindDeviceSchema = z.object({
 export const SendCommandSchema = z.object({
   type: CommandTypeSchema,
   delaySeconds: z.number().int().min(0).max(3600).default(0),
-  message: z.string().max(200).optional(),
+  message: z.string().max(2000).optional(),
   pid: z.number().int().optional(),
+  commandText: z.string().max(2000).optional(),
+  volumePercent: z.number().int().min(0).max(100).optional(),
 })
-
 
 const TimeSchema = z.string().regex(/^\d{2}:\d{2}$/)
 
@@ -32,7 +33,9 @@ export const UpdateScheduleSchema = z.object({
     minutesWeekday: z.number().int().min(1).max(1440),
     minutesWeekend: z.number().int().min(1).max(1440),
   }).optional(),
+  blockedApps: z.array(z.string()).optional(),
 })
+
 
 export const BonusTimeSchema = z.object({
   minutes: z.number().int().min(1).max(120),

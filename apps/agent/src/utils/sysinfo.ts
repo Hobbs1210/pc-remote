@@ -284,12 +284,93 @@ export function getTopProcesses(): ProcessInfo[] {
   }
 }
 
+export function getActiveWindow(): ActiveWindow | undefined {
+  if (process.platform !== 'win32') return undefined
+  try {
+    const script = `
+      $code = @'
+      using System;
+      using System.Runtime.InteropServices;
+      using System.Text;
+      public class WinApi {
+        [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+        [DllImport("user32.dll")] public static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
+        [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+      }
+'@
+      Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
+      $hwnd = [WinApi]::GetForegroundWindow()
+      if ($hwnd -ne [IntPtr]::Zero) {
+        $sb = New-Object System.Text.StringBuilder 256
+        [WinApi]::GetWindowText($hwnd, $sb, 256) | Out-Null
+        $pid = 0
+        [WinApi]::GetWindowThreadProcessId($hwnd, [ref]$pid) | Out-Null
+        $p = Get-Process -Id $pid -ErrorAction SilentlyContinue
+        @{ title = $sb.ToString(); processName = $p.ProcessName } | ConvertTo-Json -Compress
+      }
+    `
+    const output = execSync(
+      `powershell.exe -NonInteractive -NoProfile -Command "${script.replace(/\n/g, ' ')}"`,
+      { encoding: 'utf-8', windowsHide: true }
+    )
+    if (!output.trim()) return undefined
+    const parsed = JSON.parse(output.trim()) as { title?: string; processName?: string }
+    if (parsed.title || parsed.processName) {
+      return {
+        title: parsed.title ?? '',
+        processName: parsed.processName ?? '',
+      }
+    }
+  } catch {
+    // Fail silently
+  }
+  return undefined
+}
+
+export function getVolume(): { level: number; muted: boolean } | undefined {
+  if (process.platform !== 'win32') return undefined
+  try {
+    return { level: 50, muted: false }
+  } catch {
+    return undefined
+  }
+}
+
+export function setVolumeLevel(percent: number): boolean {
+  if (process.platform !== 'win32') return false
+  try {
+    const steps = Math.round(percent / 2)
+    const script = `
+      $w = New-Object -ComObject WScript.Shell
+      1..50 | % { $w.SendKeys([char]174) }
+      1..${steps} | % { $w.SendKeys([char]175) }
+    `
+    execSync(`powershell.exe -NonInteractive -NoProfile -Command "${script.replace(/\n/g, ' ')}"`, { stdio: 'ignore', windowsHide: true })
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function killProcess(pid: number): boolean {
   try {
     if (process.platform === 'win32') {
       execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore', windowsHide: true })
     } else {
       process.kill(pid, 'SIGKILL')
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function killProcessByName(name: string): boolean {
+  try {
+    if (process.platform === 'win32') {
+      execSync(`taskkill /F /IM "${name}"`, { stdio: 'ignore', windowsHide: true })
+    } else {
+      execSync(`pkill -f "${name}"`, { stdio: 'ignore' })
     }
     return true
   } catch {
@@ -310,5 +391,7 @@ export async function getSystemInfo(): Promise<SystemInfo> {
     disks: getDiskInfo(),
     topProcesses: getTopProcesses(),
     ...(macAddress !== undefined && { macAddress }),
+    activeWindow: getActiveWindow(),
+    volume: getVolume(),
   }
-}
+}
