@@ -141,7 +141,6 @@ export class DevicesService {
   }
 
   async sendCommand(userId: string, deviceId: string, input: SendCommandInput) {
-    // Проверяем что устройство принадлежит пользователю
     const device = await this.prisma.device.findFirst({
       where: { id: deviceId, userId },
     })
@@ -154,17 +153,18 @@ export class DevicesService {
         payload: {
           delaySeconds: input.delaySeconds,
           message: input.message,
+          pid: input.pid,
         },
         status: 'pending',
       },
     })
 
-    // Пытаемся отправить через WebSocket прямо сейчас
     const delivered = this.app.sendCommand(deviceId, {
       commandId: command.id,
       type: input.type,
       delaySeconds: input.delaySeconds,
       message: input.message,
+      pid: input.pid,
     })
 
     if (delivered) {
@@ -174,17 +174,40 @@ export class DevicesService {
       })
     }
 
-    // Логируем
     await this.prisma.auditLog.create({
       data: {
         deviceId,
         event: 'command_sent',
-        details: { commandId: command.id, type: input.type, delivered },
+        details: { commandId: command.id, type: input.type, delivered, pid: input.pid },
       },
     })
 
     return { command, delivered }
   }
+
+  async emergencyLockAll(userId: string) {
+    const userDevices = await this.prisma.device.findMany({
+      where: { userId },
+      select: { id: true, name: true },
+    })
+
+    const results = await Promise.all(
+      userDevices.map(async (d) => {
+        try {
+          return await this.sendCommand(userId, d.id, {
+            type: 'LOCK',
+            delaySeconds: 0,
+            message: 'Emergency Lockdown Triggered',
+          })
+        } catch {
+          return { delivered: false }
+        }
+      })
+    )
+
+    return { total: userDevices.length, locked: results.filter((r) => r.delivered).length }
+  }
+
 
   async updateSchedule(
     userId: string,

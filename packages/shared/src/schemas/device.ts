@@ -23,6 +23,15 @@ export const DiskInfoSchema = z.object({
 
 export type DiskInfo = z.infer<typeof DiskInfoSchema>
 
+export const ProcessInfoSchema = z.object({
+  pid: z.number().int(),
+  name: z.string(),
+  cpuPercent: z.number().min(0).max(100).optional(),
+  memMb: z.number().min(0).optional(),
+})
+
+export type ProcessInfo = z.infer<typeof ProcessInfoSchema>
+
 export const HeartbeatPayloadSchema = z.object({
   deviceId: z.string().uuid(),
   timestamp: z.string().datetime(),
@@ -32,11 +41,13 @@ export const HeartbeatPayloadSchema = z.object({
   activeUsers: z.array(ActiveUserSchema),
   agentVersion: z.string(),
   disks: z.array(DiskInfoSchema).optional(),
+  topProcesses: z.array(ProcessInfoSchema).optional(),
 })
 
 export type ActiveUser = z.infer<typeof ActiveUserSchema>
 
 export type HeartbeatPayload = z.infer<typeof HeartbeatPayloadSchema>
+
 export type DeviceStatus = z.infer<typeof DeviceStatusSchema>
 
 export const LocalUserSchema = z.object({

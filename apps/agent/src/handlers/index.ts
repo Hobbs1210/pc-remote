@@ -1,15 +1,16 @@
 import { execSync } from 'node:child_process'
 import { log as logger } from '../utils/logger.js'
 import { setPendingLock, setPendingVolume, setPendingScreenshot } from '../local-server.js'
+import { killProcess } from '../utils/sysinfo.js'
 import type { CommandPayload } from '@pc-remote/shared'
 
 export async function executeCommand(payload: CommandPayload): Promise<void> {
-  const { type, delaySeconds = 0, message } = payload
+  const { type, delaySeconds = 0, message, pid } = payload
 
-  logger.info({ type, delaySeconds }, 'Executing command')
+  logger.info({ type, delaySeconds, pid }, 'Executing command')
 
-  if (process.platform !== 'win32') {
-    // В dev-режиме просто логируем
+  if (process.platform !== 'win32' && type !== 'KILL_PROCESS') {
+    // In dev mode, log execution
     logger.info(`[DEV MODE] Would execute: ${type} after ${delaySeconds}s`)
     return
   }
@@ -30,7 +31,6 @@ export async function executeCommand(payload: CommandPayload): Promise<void> {
       break
 
     case 'LOCK':
-      // LockWorkStation не работает из сервиса (session 0) — делегируем трею через /status
       if (delaySeconds > 0) {
         setTimeout(() => setPendingLock(), delaySeconds * 1000)
       } else {
@@ -66,10 +66,17 @@ export async function executeCommand(payload: CommandPayload): Promise<void> {
       setPendingScreenshot()
       break
 
+    case 'KILL_PROCESS':
+      if (pid) {
+        killProcess(pid)
+      }
+      break
+
     default:
       logger.warn({ type }, 'Unknown command type')
   }
 }
+
 
 // Отменить отложенный shutdown/reboot
 export function cancelShutdown(): void {

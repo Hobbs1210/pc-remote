@@ -228,6 +228,60 @@ function getDiskInfo(): DiskInfo[] {
   }
 }
 
+export interface ProcessInfo {
+  pid: number
+  name: string
+  cpuPercent?: number
+  memMb?: number
+}
+
+export interface SystemInfo {
+  cpuPercent: number
+  ramPercent: number
+  uptime: number
+  activeUsers: ActiveUser[]
+  platform: string
+  disks: DiskInfo[]
+  topProcesses: ProcessInfo[]
+}
+
+export function getTopProcesses(): ProcessInfo[] {
+  try {
+    if (process.platform === 'win32') {
+      const output = execSync(
+        'powershell.exe -NonInteractive -NoProfile -Command "Get-Process | Sort-Object -Property WorkingSet64 -Descending | Select-Object -First 5 -Property Id, ProcessName, @{N=\'MemMb\';E={[math]::Round($_.WorkingSet64 / 1MB, 1)}} | ConvertTo-Json -Compress"',
+        { encoding: 'utf-8', windowsHide: true }
+      )
+      const parsed: unknown = JSON.parse(output.trim())
+      const arr = Array.isArray(parsed) ? parsed : [parsed]
+      return arr
+        .filter((p): p is Record<string, unknown> => typeof p === 'object' && p !== null)
+        .map((p) => ({
+          pid: Number(p['Id'] ?? 0),
+          name: String(p['ProcessName'] ?? ''),
+          memMb: Number(p['MemMb'] ?? 0),
+        }))
+        .filter((p) => p.pid > 0 && p.name)
+    }
+    return []
+  } catch {
+    return []
+  }
+}
+
+export function killProcess(pid: number): boolean {
+  try {
+    if (process.platform === 'win32') {
+      execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore', windowsHide: true })
+    } else {
+      process.kill(pid, 'SIGKILL')
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function getSystemInfo(): Promise<SystemInfo> {
   const [cpuPercent] = await Promise.all([getCpuPercent()])
 
@@ -238,5 +292,6 @@ export async function getSystemInfo(): Promise<SystemInfo> {
     activeUsers: getActiveUsers(),
     platform: process.platform,
     disks: getDiskInfo(),
+    topProcesses: getTopProcesses(),
   }
 }

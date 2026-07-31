@@ -12,7 +12,9 @@ export const SendCommandSchema = z.object({
   type: CommandTypeSchema,
   delaySeconds: z.number().int().min(0).max(3600).default(0),
   message: z.string().max(200).optional(),
+  pid: z.number().int().optional(),
 })
+
 
 const TimeSchema = z.string().regex(/^\d{2}:\d{2}$/)
 

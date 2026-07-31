@@ -26,13 +26,35 @@ function StatusDot({ status }: { status: string }) {
 
 export default function DevicesScreen() {
   const navigation = useNavigation<Nav>()
-  const { devices, isLoading, fetchDevices, deleteDevice } = useDevicesStore()
+  const { devices, isLoading, fetchDevices, deleteDevice, emergencyLockAll } = useDevicesStore()
 
   useEffect(() => {
     void fetchDevices()
     const interval = setInterval(() => void fetchDevices(), 30_000)
     return () => clearInterval(interval)
   }, [])
+
+  const handleEmergencyLock = useCallback(() => {
+    Alert.alert(
+      'Emergency Lockdown',
+      'Are you sure you want to lock all connected PCs immediately?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Lock All PCs',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const res = await emergencyLockAll()
+              Alert.alert('Lockdown Sent', `Locked ${res.locked} of ${res.total} devices.`)
+            } catch {
+              Alert.alert('Error', 'Failed to trigger emergency lockdown')
+            }
+          },
+        },
+      ]
+    )
+  }, [emergencyLockAll])
 
   const handleLongPress = useCallback((item: typeof devices[0]) => {
     Alert.alert(
@@ -103,6 +125,12 @@ export default function DevicesScreen() {
 
   return (
     <View style={styles.container}>
+      {devices.some((d) => d.status === 'online') && (
+        <TouchableOpacity style={styles.emergencyBtn} onPress={handleEmergencyLock}>
+          <Text style={styles.emergencyBtnText}>🚨 Lock All PCs Immediately</Text>
+        </TouchableOpacity>
+      )}
+
       {isLoading && devices.length === 0 ? (
         <ActivityIndicator color="#6c63ff" style={{ marginTop: 40 }} />
       ) : (
@@ -129,7 +157,6 @@ export default function DevicesScreen() {
         />
       )}
 
-
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('Scan')}
@@ -140,10 +167,21 @@ export default function DevicesScreen() {
   )
 }
 
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f0f23' },
+  emergencyBtn: {
+    backgroundColor: '#ef4444',
+    margin: 16,
+    marginBottom: 0,
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  emergencyBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   list: { padding: 16, gap: 12 },
   card: {
+
     backgroundColor: '#1a1a2e',
     borderRadius: 16,
     padding: 16,

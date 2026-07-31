@@ -56,6 +56,19 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
     return service.getUserDevices(request.user.userId)
   })
 
+  app.post('/emergency-lock', async (request, reply) => {
+    try {
+      const result = await service.emergencyLockAll(request.user.userId)
+      return reply.status(200).send(result)
+    } catch (err) {
+      if (err instanceof DeviceError) {
+        return reply.status(err.statusCode).send({ error: err.message })
+      }
+      throw err
+    }
+  })
+
+
   app.get<{ Params: { id: string } }>('/:id', async (request, reply) => {
     try {
       return await service.getDevice(request.user.userId, request.params.id)

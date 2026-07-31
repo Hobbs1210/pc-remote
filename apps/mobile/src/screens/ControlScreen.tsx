@@ -87,6 +87,23 @@ function CommandButton({ label, emoji, color, onPress }: CommandButtonProps) {
   )
 }
 
+function ProcessRow({ proc, onKill }: { proc: ProcessInfo; onKill: () => void }) {
+  return (
+    <View style={styles.userRow}>
+      <View style={styles.userIcon}>
+        <Text style={styles.userIconText}>⚡</Text>
+      </View>
+      <View style={styles.userInfo}>
+        <Text style={styles.userName}>{proc.name}</Text>
+        <Text style={styles.userMeta}>PID: {proc.pid} {proc.memMb ? `· ${proc.memMb} MB RAM` : ''}</Text>
+      </View>
+      <TouchableOpacity style={styles.killBtn} onPress={onKill}>
+        <Text style={styles.killBtnText}>End Task</Text>
+      </TouchableOpacity>
+    </View>
+  )
+}
+
 function DiskRow({ disk }: { disk: DiskInfo }) {
   const usedPct = disk.total > 0 ? Math.round((disk.used / disk.total) * 100) : 0
   const freeGb = (disk.free / 1073741824).toFixed(1)
@@ -120,6 +137,28 @@ export default function ControlScreen({ route }: Props) {
   const [screenshotData, setScreenshotData] = useState<string | null>(null)
   const [screenshotLoading, setScreenshotLoading] = useState(false)
   const screenshotPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const handleKillProcess = (pid: number, name: string) => {
+    Alert.alert(
+      'End Process',
+      `Are you sure you want to terminate "${name}" (PID: ${pid})?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'End Task',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await sendCommand(deviceId, 'KILL_PROCESS', 0, pid)
+              Alert.alert('✓ Command Sent', `Termination signal sent to ${name}`)
+            } catch {
+              Alert.alert('Error', 'Failed to send kill command')
+            }
+          },
+        },
+      ]
+    )
+  }
 
   const takeScreenshot = async () => {
     setScreenshotLoading(true)
@@ -306,6 +345,18 @@ export default function ControlScreen({ route }: Props) {
         </>
       )}
 
+      {/* Top Processes */}
+      {device?.status === 'online' && (device?.topProcesses?.length ?? 0) > 0 && (
+        <>
+          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Top Processes</Text>
+          <View style={styles.usersCard}>
+            {device.topProcesses!.map((p) => (
+              <ProcessRow key={p.pid} proc={p} onKill={() => handleKillProcess(p.pid, p.name)} />
+            ))}
+          </View>
+        </>
+      )}
+
       {/* Active Sessions */}
       {device?.status === 'online' && (device?.activeUsers?.length ?? 0) > 0 && (
         <>
@@ -317,6 +368,7 @@ export default function ControlScreen({ route }: Props) {
           </View>
         </>
       )}
+
 
       {/* Local PC Accounts */}
       {deviceLocalUsers.length > 0 && (
@@ -578,7 +630,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   userStateText: { fontSize: 12, fontWeight: '600' },
+  killBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: '#ef444422',
+    borderWidth: 1,
+    borderColor: '#ef444488',
+  },
+  killBtnText: { color: '#ef4444', fontSize: 12, fontWeight: '600' },
   diskRow: {
+
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
