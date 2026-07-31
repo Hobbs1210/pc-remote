@@ -79,3 +79,14 @@ jobs:
             apps/mobile/*.apk
           retention-days: 30
           if-no-files-found: warn
+
+      - name: Attach APK to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apps/mobile/android/app/build/outputs/apk/release/*.apk
+            apps/mobile/android/app/build/outputs/apk/debug/*.apk
+            apps/mobile/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
