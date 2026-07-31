@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin'
-import { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify'
+import { FastifyPluginAsync, FastifyRequest, FastifyReply, FastifyInstance } from 'fastify'
 import fjwt from '@fastify/jwt'
 
 declare module '@fastify/jwt' {
@@ -9,7 +9,21 @@ declare module '@fastify/jwt' {
   }
 }
 
-const jwtPlugin: FastifyPluginAsync = fp(async (app) => {
+declare module 'fastify' {
+  interface FastifyInstance {
+    authenticate: (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ) => Promise<void>
+    jwt: any
+  }
+  interface FastifyRequest {
+    jwtVerify: (options?: any) => Promise<any>
+    user: { userId: string; email: string }
+  }
+}
+
+const jwtPlugin: FastifyPluginAsync = fp(async (app: FastifyInstance) => {
   await app.register(fjwt, {
     secret: process.env.JWT_SECRET!,
     sign: { expiresIn: '15m' }, // access токен живёт 15 минут
@@ -27,15 +41,5 @@ const jwtPlugin: FastifyPluginAsync = fp(async (app) => {
     }
   )
 })
-
-// Добавляем тип декоратора в FastifyInstance
-declare module 'fastify' {
-  interface FastifyInstance {
-    authenticate: (
-      request: FastifyRequest,
-      reply: FastifyReply
-    ) => Promise<void>
-  }
-}
 
 export default jwtPlugin

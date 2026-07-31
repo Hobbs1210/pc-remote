@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin'
-import { FastifyPluginAsync } from 'fastify'
+import { FastifyInstance } from 'fastify'
 import { Server, Socket } from 'socket.io'
 import { PrismaClient } from '@prisma/client'
 
@@ -29,7 +29,7 @@ type AgentSocket = Socket<AgentToServerEvents, ServerToAgentEvents, InterServerE
 
 const screenshotCache = new Map<string, { image: string; capturedAt: string }>()
 
-const socketPlugin: FastifyPluginAsync = fp(async (app) => {
+const socketPlugin = fp(async (app: FastifyInstance) => {
   const socketService = new SocketService(app.prisma as PrismaClient)
 
   const io = new Server<AgentToServerEvents, ServerToAgentEvents, InterServerEvents, SocketData>(app.server, {
