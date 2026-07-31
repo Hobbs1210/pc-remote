@@ -69,14 +69,23 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
+      - name: Sign & Verify Android APK (V1/V2/V3 Signatures)
+        run: |
+          mkdir -p apps/mobile/output
+          cd apps/mobile/android/app/build/outputs/apk/release
+          keytool -genkeypair -v -keystore release.keystore -storepass androidpass -alias pcremote -keypass androidpass -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=PC Remote,O=PC Remote,C=US"
+          BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | tail -n 1)
+          $BUILD_TOOLS_DIR/apksigner sign --ks release.keystore --ks-pass pass:androidpass --key-pass pass:androidpass --out pc-remote-mobile.apk app-release.apk
+          $BUILD_TOOLS_DIR/apksigner verify --verbose pc-remote-mobile.apk
+          cp pc-remote-mobile.apk ../../../../../../output/pc-remote-mobile.apk
+
       - name: Upload mobile build artifact
         uses: actions/upload-artifact@v4
         with:
           name: pc-remote-mobile-app
           path: |
+            apps/mobile/output/pc-remote-mobile.apk
             apps/mobile/android/app/build/outputs/apk/release/*.apk
-            apps/mobile/android/app/build/outputs/apk/debug/*.apk
-            apps/mobile/*.apk
           retention-days: 30
           if-no-files-found: warn
 
@@ -85,8 +94,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            apps/mobile/android/app/build/outputs/apk/release/*.apk
-            apps/mobile/android/app/build/outputs/apk/debug/*.apk
-            apps/mobile/*.apk
+            apps/mobile/output/pc-remote-mobile.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -5,6 +5,10 @@ node_modules/
 dist/
 build/
 
+# Expo native builds
+apps/mobile/android/
+apps/mobile/ios/
+
 # Env files (contain secrets)
 .env
 .env.*
