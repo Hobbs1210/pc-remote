@@ -116,15 +116,11 @@ You can install the PC Remote Agent on any Windows PC using **Windows Package Ma
 
 To install the latest published release of PC Remote Agent via Winget:
 
+#### Interactive Wizard Installation
+By default, winget launches the interactive setup wizard so you can configure the Server URL and Tray Password:
+
 ```cmd
 winget install Hobbs1210.PCRemoteAgent
-```
-
-#### Silent / Unattended Installation
-To install silently without interactive wizard prompts:
-
-```cmd
-winget install Hobbs1210.PCRemoteAgent --silent
 ```
 
 #### Install directly from Remote GitHub Repository (One-Liner)

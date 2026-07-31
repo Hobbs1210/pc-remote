@@ -25,8 +25,7 @@ Installers:
     InstallerUrl: https://github.com/Hobbs1210/pc-remote/releases/download/v0.0.4/pc-remote-agent-setup.exe
     InstallerSha256: 2795A04772168C01AE6474514817F3E0CDE98E39C143EB7DE275BBB1BA51BE81
     Scope: machine
-    InstallerSwitches:
-      Silent: /VERYSILENT /SUPPRESSMSGBOXES
-      SilentWithProgress: /SILENT
+    InstallerModes:
+      - interactive
 ManifestType: singleton
 ManifestVersion: 1.6.0

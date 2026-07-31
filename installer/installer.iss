@@ -19,7 +19,7 @@ SolidCompression=yes
 PrivilegesRequired=admin
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#MyAppExeName}
-; При повторной установке не спрашивать — сразу заменить
+; On reinstall, do not prompt - replace immediately
 CloseApplications=yes
 CloseApplicationsFilter=*agent.exe*
 
