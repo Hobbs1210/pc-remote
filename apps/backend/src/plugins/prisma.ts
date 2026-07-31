@@ -15,7 +15,12 @@ const prismaPlugin: FastifyPluginAsync = fp(async (app) => {
       : ['warn', 'error'],
   })
 
-  await prisma.$connect()
+  try {
+    await prisma.$connect()
+    app.log.info('Connected to PostgreSQL database via Prisma')
+  } catch (err) {
+    app.log.error(err, 'Failed to connect to PostgreSQL database. Verify DATABASE_URL in .env and ensure PostgreSQL is running.')
+  }
 
   app.decorate('prisma', prisma)
 
@@ -23,5 +28,6 @@ const prismaPlugin: FastifyPluginAsync = fp(async (app) => {
     await prisma.$disconnect()
   })
 })
+
 
 export default prismaPlugin
