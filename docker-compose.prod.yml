@@ -4,7 +4,7 @@
 services:
   backend:
     build: !reset null
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-hobbs1210}/backend:latest
+    image: ghcr.io/${GITHUB_REPOSITORY:-hobbs1210/pc-remote}/backend:latest
     restart: always
 
   postgres:

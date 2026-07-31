@@ -21,7 +21,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-hobbs1210}/backend:latest
+    image: ghcr.io/${GITHUB_REPOSITORY:-hobbs1210/pc-remote}/backend:latest
     container_name: pc-remote-backend
     restart: unless-stopped
     ports:
