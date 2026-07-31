@@ -4,18 +4,46 @@ services:
     container_name: pc-remote-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: pcremote
-      POSTGRES_PASSWORD: pcremote
-      POSTGRES_DB: pc_remote
+      POSTGRES_USER: ${POSTGRES_USER:-pcremote}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pcremote}
+      POSTGRES_DB: ${POSTGRES_DB:-pc_remote}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pcremote -d pc_remote"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pcremote} -d ${POSTGRES_DB:-pc_remote}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - pc-remote-net
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-pc-remote}/backend:latest
+    container_name: pc-remote-backend
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pcremote}:${POSTGRES_PASSWORD:-pcremote}@postgres:5432/${POSTGRES_DB:-pc_remote}
+      JWT_SECRET: ${JWT_SECRET:-change-this-jwt-secret-min-32-chars-long}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-this-refresh-secret-min-32-chars}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r => process.exit(r.ok ? 0 : 1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - pc-remote-net
 
   adminer:
     image: adminer:latest
@@ -26,6 +54,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - pc-remote-net
 
 volumes:
   postgres_data:
+
+networks:
+  pc-remote-net:
+    driver: bridge

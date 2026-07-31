@@ -47,7 +47,15 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
   ValueData: "wscript.exe ""{app}\tray-launcher.vbs"""; \
   Flags: uninsdeletevalue
 
+[Dirs]
+Name: "{commonappdata}\pc-remote-agent"; Permissions: system-full administrators-full
+
 [Run]
+; Создаём и ограничиваем права на ProgramData\pc-remote-agent (только SYSTEM и Администраторы)
+Filename: "icacls.exe"; \
+  Parameters: """{commonappdata}\pc-remote-agent"" /inheritance:r /grant:r ""*S-1-5-18:(OI)(CI)F"" ""*S-1-5-32-544:(OI)(CI)F"""; \
+  Flags: runhidden waituntilterminated
+
 ; Регистрируем и запускаем сервис
 Filename: "{app}\agent-svc.exe"; Parameters: "install"; \
   Flags: runhidden waituntilterminated
@@ -249,7 +257,7 @@ begin
   ServerUrl := ServerUrlPage.Values[0];
   ConfigPath := ExpandConstant('{app}\agent-svc.xml');
 
-  SetArrayLength(Lines, 17);
+  SetArrayLength(Lines, 19);
   Lines[0]  := '<?xml version="1.0" encoding="UTF-8"?>';
   Lines[1]  := '<service>';
   Lines[2]  := '  <id>{#MyServiceName}</id>';
@@ -266,7 +274,9 @@ begin
   Lines[13] := '  <stoptimeout>15 sec</stoptimeout>';
   Lines[14] := '  <log mode="none"/>';
   Lines[15] := '  <onfailure action="restart" delay="10 sec"/>';
-  Lines[16] := '</service>';
+  Lines[16] := '  <onfailure action="restart" delay="30 sec"/>';
+  Lines[17] := '  <resetperiod>1 day</resetperiod>';
+  Lines[18] := '</service>';
 
   SaveStringsToFile(ConfigPath, Lines, False);
 end;

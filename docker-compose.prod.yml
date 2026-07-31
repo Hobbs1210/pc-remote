@@ -1,0 +1,14 @@
+# Production override for docker-compose.yml
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  backend:
+    build: !reset null
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-pc-remote}/backend:latest
+    restart: always
+
+  postgres:
+    restart: always
+
+  adminer:
+    restart: always
