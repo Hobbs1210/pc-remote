@@ -258,7 +258,7 @@ begin
   Lines[11] := '    <username>LocalSystem</username>';
   Lines[12] := '  </serviceaccount>';
   Lines[13] := '  <stoptimeout>15 sec</stoptimeout>';
-  Lines[14] := '  <log mode="none"/>';
+  Lines[14] := '  <log mode="roll"/>';
   Lines[15] := '  <onfailure action="restart" delay="10 sec"/>';
   Lines[16] := '  <onfailure action="restart" delay="30 sec"/>';
   Lines[17] := '  <resetperiod>1 day</resetperiod>';
