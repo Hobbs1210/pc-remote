@@ -48,7 +48,7 @@ Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
   Flags: uninsdeletevalue
 
 [Dirs]
-Name: "{commonappdata}\pc-remote-agent"; Permissions: system-full administrators-full
+Name: "{commonappdata}\pc-remote-agent"; Permissions: system-full admins-full
 
 [Run]
 ; Create and restrict permissions on ProgramData\pc-remote-agent (SYSTEM and Administrators only)
