@@ -42,7 +42,9 @@ export const HeartbeatPayloadSchema = z.object({
   agentVersion: z.string(),
   disks: z.array(DiskInfoSchema).optional(),
   topProcesses: z.array(ProcessInfoSchema).optional(),
+  macAddress: z.string().optional(),
 })
+
 
 export type ActiveUser = z.infer<typeof ActiveUserSchema>
 

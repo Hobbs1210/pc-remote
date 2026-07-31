@@ -121,7 +121,7 @@ function DiskRow({ disk }: { disk: DiskInfo }) {
 
 export default function ControlScreen({ route }: Props) {
   const { deviceId, deviceName } = route.params
-  const { sendCommand, devices, localUsers, fetchLocalUsers, fetchScreenshot } = useDevicesStore()
+  const { sendCommand, showMessage, wakeOnLan, devices, localUsers, fetchLocalUsers, fetchScreenshot } = useDevicesStore()
   const navigation = useNavigation<Nav>()
   const device = devices.find((d) => d.id === deviceId)
   const deviceLocalUsers = localUsers[deviceId] ?? []
@@ -136,7 +136,31 @@ export default function ControlScreen({ route }: Props) {
   const [screenshotModal, setScreenshotModal] = useState(false)
   const [screenshotData, setScreenshotData] = useState<string | null>(null)
   const [screenshotLoading, setScreenshotLoading] = useState(false)
+  const [messageModal, setMessageModal] = useState(false)
+  const [customMessage, setCustomMessage] = useState('')
   const screenshotPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const sendCustomMessage = async () => {
+    if (!customMessage.trim()) return
+    try {
+      await showMessage(deviceId, customMessage.trim())
+      Alert.alert('✓ Message Sent', 'Banner sent to target PC screen')
+      setMessageModal(false)
+      setCustomMessage('')
+    } catch {
+      Alert.alert('Error', 'Failed to send message banner')
+    }
+  }
+
+  const triggerWol = async () => {
+    try {
+      const res = await wakeOnLan(deviceId)
+      Alert.alert('Wake-on-LAN Sent', `Magic packet sent to ${res.macAddress}`)
+    } catch {
+      Alert.alert('Error', 'Failed to send Wake-on-LAN packet')
+    }
+  }
+
 
   const handleKillProcess = (pid: number, name: string) => {
     Alert.alert(
@@ -304,8 +328,8 @@ export default function ControlScreen({ route }: Props) {
         />
       </View>
 
-      {/* Volume */}
-      <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Volume</Text>
+      {/* Volume & Utility */}
+      <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Volume & Tools</Text>
       <View style={styles.cmdGrid}>
         <CommandButton
           label="Vol Down"
@@ -331,7 +355,20 @@ export default function ControlScreen({ route }: Props) {
           color="#a78bfa"
           onPress={() => void takeScreenshot()}
         />
+        <CommandButton
+          label="Message"
+          emoji="💬"
+          color="#4ade80"
+          onPress={() => setMessageModal(true)}
+        />
+        <CommandButton
+          label="Wake-on-LAN"
+          emoji="⚡"
+          color="#facc15"
+          onPress={() => void triggerWol()}
+        />
       </View>
+
 
       {/* Disks */}
       {device?.status === 'online' && (device?.disks?.length ?? 0) > 0 && (
@@ -438,7 +475,39 @@ export default function ControlScreen({ route }: Props) {
         </View>
       </Modal>
 
+      {/* Message Modal */}
+      <Modal visible={messageModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Send Message Banner</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={customMessage}
+              onChangeText={setCustomMessage}
+              placeholder="e.g. Dinner is ready!"
+              placeholderTextColor="#666"
+              multiline
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancel}
+                onPress={() => setMessageModal(false)}
+              >
+                <Text style={{ color: '#888' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirm}
+                onPress={() => void sendCustomMessage()}
+              >
+                <Text style={{ color: '#fff' }}>Send</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Delay Modal */}
+
       <Modal visible={delayModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>

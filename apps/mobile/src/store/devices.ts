@@ -44,6 +44,7 @@ export interface Device {
   timezone: string
   disks: DiskInfo[]
   topProcesses?: ProcessInfo[]
+  macAddress?: string | null
 }
 
 interface DevicesState {
@@ -53,12 +54,15 @@ interface DevicesState {
   error: string | null
   fetchDevices: () => Promise<void>
   fetchLocalUsers: (deviceId: string) => Promise<void>
-  sendCommand: (deviceId: string, type: string, delaySeconds?: number, pid?: number) => Promise<{ delivered: boolean }>
+  sendCommand: (deviceId: string, type: string, delaySeconds?: number, pid?: number, message?: string) => Promise<{ delivered: boolean }>
+  showMessage: (deviceId: string, message: string) => Promise<{ delivered: boolean }>
+  wakeOnLan: (deviceId: string) => Promise<{ success: boolean; macAddress: string }>
   emergencyLockAll: () => Promise<{ total: number; locked: number }>
   fetchScreenshot: (deviceId: string) => Promise<{ image: string; capturedAt: string } | null>
   bindDevice: (deviceId: string, secret: string, name: string) => Promise<void>
   deleteDevice: (deviceId: string) => Promise<void>
 }
+
 
 export const useDevicesStore = create<DevicesState>((set) => ({
   devices: [],
@@ -86,10 +90,25 @@ export const useDevicesStore = create<DevicesState>((set) => ({
     }
   },
 
-  sendCommand: async (deviceId, type, delaySeconds = 0, pid) => {
-    const { data } = await api.post(`/devices/${deviceId}/commands`, { type, delaySeconds, pid })
+  sendCommand: async (deviceId, type, delaySeconds = 0, pid, message) => {
+    const { data } = await api.post(`/devices/${deviceId}/commands`, { type, delaySeconds, pid, message })
     return { delivered: data.delivered }
   },
+
+  showMessage: async (deviceId, message) => {
+    const { data } = await api.post(`/devices/${deviceId}/commands`, {
+      type: 'SHOW_MESSAGE',
+      delaySeconds: 0,
+      message,
+    })
+    return { delivered: data.delivered }
+  },
+
+  wakeOnLan: async (deviceId) => {
+    const { data } = await api.post<{ success: boolean; macAddress: string }>(`/devices/${deviceId}/wol`)
+    return data
+  },
+
 
   emergencyLockAll: async () => {
     const { data } = await api.post<{ total: number; locked: number }>('/devices/emergency-lock')

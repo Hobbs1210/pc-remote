@@ -243,6 +243,21 @@ export interface SystemInfo {
   platform: string
   disks: DiskInfo[]
   topProcesses: ProcessInfo[]
+  macAddress?: string
+}
+
+export function getMacAddress(): string | undefined {
+  const interfaces = os.networkInterfaces()
+  for (const name of Object.keys(interfaces)) {
+    const list = interfaces[name]
+    if (!list) continue
+    for (const iface of list) {
+      if (!iface.internal && iface.mac && iface.mac !== '00:00:00:00:00:00') {
+        return iface.mac.toUpperCase()
+      }
+    }
+  }
+  return undefined
 }
 
 export function getTopProcesses(): ProcessInfo[] {
@@ -293,5 +308,6 @@ export async function getSystemInfo(): Promise<SystemInfo> {
     platform: process.platform,
     disks: getDiskInfo(),
     topProcesses: getTopProcesses(),
+    macAddress: getMacAddress(),
   }
-}
+}

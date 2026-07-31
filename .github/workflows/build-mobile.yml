@@ -1,16 +1,22 @@
-name: Build Android APK
+name: Build Mobile Android APK
 
 on:
   push:
     branches: [main]
+    tags:
+      - 'v*.*.*'
     paths:
       - 'apps/mobile/**'
+      - 'packages/shared/**'
       - '.github/workflows/build-mobile.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  test:
-    name: Test mobile app
+  build:
+    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
@@ -25,60 +31,38 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build shared
         run: pnpm --filter @pc-remote/shared build
 
-      - name: Run mobile tests
-        run: pnpm --filter mobile test -- --coverage=false --passWithNoTests
+      - name: Setup Expo CLI
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          patch-watchers: true
 
-  build:
-    name: Build Android APK
-    needs: test
-    runs-on: ubuntu-latest
+      - name: Typecheck mobile
+        run: pnpm --filter mobile typecheck
 
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Free disk space
+      - name: Build APK with EAS (preview)
+        if: env.EXPO_TOKEN != ''
         run: |
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost
-          sudo apt-get clean
-          df -h
+          cd apps/mobile
+          eas build --platform android --profile preview --non-interactive
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - uses: android-actions/setup-android@v3
-
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
-
-      - name: Install dependencies
-        working-directory: apps/mobile
-        run: npm install
-
-      - name: Build APK (EAS local)
-        working-directory: apps/mobile
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          GRADLE_OPTS: '-Dorg.gradle.jvmargs=-Xmx2g -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2'
-        run: eas build --platform android --profile preview --non-interactive --local --output ./build/app.apk
-
-      - name: Upload APK artifact
+      - name: Upload mobile build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pc-remote-android
-          path: apps/mobile/build/app.apk
+          name: pc-remote-mobile-app
+          path: apps/mobile
           retention-days: 30

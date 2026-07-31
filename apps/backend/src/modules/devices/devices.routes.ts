@@ -210,7 +210,20 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
     })
   })
 
+  app.post<{ Params: { id: string } }>('/:id/wol', async (request, reply) => {
+    try {
+      const result = await service.wakeOnLan(request.user.userId, request.params.id)
+      return reply.status(200).send(result)
+    } catch (err) {
+      if (err instanceof DeviceError) {
+        return reply.status(err.statusCode).send({ error: err.message })
+      }
+      throw err
+    }
+  })
+
   app.post<{ Params: { id: string } }>('/:id/schedule/bonus', async (request, reply) => {
+
     const body = BonusTimeSchema.safeParse(request.body)
     if (!body.success) {
       return reply.status(400).send({ error: body.error.flatten() })

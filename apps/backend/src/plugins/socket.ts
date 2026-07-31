@@ -88,7 +88,7 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
         return
       }
 
-      const { cpuPercent, ramPercent, uptime, activeUsers, agentVersion, disks } =
+      const { cpuPercent, ramPercent, uptime, activeUsers, agentVersion, disks, macAddress } =
         parsed.data
 
       await (app.prisma as PrismaClient).device.update({
@@ -102,9 +102,11 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
           activeUsers,
           agentVersion,
           ...(disks !== undefined && { disks }),
+          ...(macAddress !== undefined && { macAddress }),
         },
       })
     })
+
 
     // Результат выполнения команды от агента
     socket.on(WS_EVENTS.AGENT_COMMAND_RESULT, async (raw: unknown) => {

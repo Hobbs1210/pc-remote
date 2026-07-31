@@ -53,8 +53,10 @@ model Device {
   uptime       Int?
   activeUsers  Json     @default("[]")
   disks        Json     @default("[]")
+  macAddress   String?
 
   screenshotImage String?   // base64 JPEG
+
   screenshotAt    DateTime? // серверное время получения
 
   createdAt    DateTime  @default(now())

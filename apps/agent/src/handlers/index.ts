@@ -72,10 +72,24 @@ export async function executeCommand(payload: CommandPayload): Promise<void> {
       }
       break
 
+    case 'SHOW_MESSAGE':
+      if (message) {
+        try {
+          execSync(`msg.exe * "${message.replace(/"/g, '""')}"`, { windowsHide: true })
+        } catch {
+          execSync(
+            `powershell.exe -NonInteractive -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('${message.replace(/'/g, "''")}', 'PC Remote')"`,
+            { windowsHide: true }
+          )
+        }
+      }
+      break
+
     default:
       logger.warn({ type }, 'Unknown command type')
   }
 }
+
 
 
 // Отменить отложенный shutdown/reboot

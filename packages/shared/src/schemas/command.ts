@@ -11,7 +11,9 @@ export const CommandTypeSchema = z.enum([
   'SCREENSHOT',
   'KILL_PROCESS',
   'WOL',
+  'SHOW_MESSAGE',
 ])
+
 
 export type CommandType = z.infer<typeof CommandTypeSchema>
 

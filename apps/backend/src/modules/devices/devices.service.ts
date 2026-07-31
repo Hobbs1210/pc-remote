@@ -1,6 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client'
 import { FastifyInstance } from 'fastify'
 import crypto from 'node:crypto'
+import dgram from 'node:dgram'
 import bcrypt from 'bcryptjs'
 import { WS_EVENTS } from '@pc-remote/shared'
 import type {
@@ -9,6 +10,44 @@ import type {
   UpdateScheduleInput,
   BonusTimeInput,
 } from './devices.schema.js'
+
+function createWolMagicPacket(mac: string): Buffer {
+  const cleanMac = mac.replace(/[^a-fA-F0-9]/g, '')
+  if (cleanMac.length !== 12) throw new Error('Invalid MAC address')
+
+  const macBytes = Buffer.from(cleanMac, 'hex')
+  const packet = Buffer.alloc(6 + 16 * 6)
+
+  packet.fill(0xff, 0, 6)
+  for (let i = 0; i < 16; i++) {
+    macBytes.copy(packet, 6 + i * 6)
+  }
+  return packet
+}
+
+function sendWolPacket(mac: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    try {
+      const packet = createWolMagicPacket(mac)
+      const socket = dgram.createSocket('udp4')
+
+      socket.on('error', () => {
+        try { socket.close() } catch {}
+        resolve(false)
+      })
+
+      socket.bind(() => {
+        socket.setBroadcast(true)
+        socket.send(packet, 0, packet.length, 9, '255.255.255.255', (err) => {
+          try { socket.close() } catch {}
+          resolve(!err)
+        })
+      })
+    } catch {
+      resolve(false)
+    }
+  })
+}
 
 export class DeviceError extends Error {
   constructor(
@@ -21,6 +60,7 @@ export class DeviceError extends Error {
 }
 
 export class DevicesService {
+
   constructor(
     private prisma: PrismaClient,
     private app: FastifyInstance
@@ -108,6 +148,7 @@ export class DevicesService {
         activeUsers: true,
         agentVersion: true,
         timezone: true,
+        macAddress: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -129,16 +170,29 @@ export class DevicesService {
         agentVersion: true,
         timezone: true,
         platform: true,
+        macAddress: true,
         createdAt: true,
         updatedAt: true,
         schedule: true,
-        // secret и agentToken намеренно исключены
       },
     })
   
     if (!device) throw new DeviceError('Device not found', 404)
     return device
   }
+
+  async wakeOnLan(userId: string, deviceId: string) {
+    const device = await this.prisma.device.findFirst({
+      where: { id: deviceId, userId },
+      select: { id: true, macAddress: true },
+    })
+    if (!device) throw new DeviceError('Device not found', 404)
+    if (!device.macAddress) throw new DeviceError('Device MAC address not recorded', 400)
+
+    const sent = await sendWolPacket(device.macAddress)
+    return { success: sent, macAddress: device.macAddress }
+  }
+
 
   async sendCommand(userId: string, deviceId: string, input: SendCommandInput) {
     const device = await this.prisma.device.findFirst({
