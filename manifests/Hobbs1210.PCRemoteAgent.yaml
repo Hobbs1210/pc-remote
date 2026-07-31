@@ -23,7 +23,7 @@ Installers:
   - Architecture: x64
     InstallerType: inno
     InstallerUrl: https://github.com/Hobbs1210/pc-remote/releases/download/v0.0.4/pc-remote-agent-setup.exe
-    InstallerSha256: C06B42359F35CBFE5DB0C18D6B12183D42CB6A4811B1C2631EAA78D8713FD859
+    InstallerSha256: 93A9313E2E0916CEE9BDC2FACB31FDB53F157767CCABE998C1E1ED94F4F42CFE
     Scope: machine
     InstallerModes:
       - interactive
