@@ -22,6 +22,9 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 ; On reinstall, do not prompt - replace immediately
 CloseApplications=yes
 CloseApplicationsFilter=*agent.exe*
+LanguageDetectionMethod=none
+ShowLanguageDialog=no
+UsePreviousLanguage=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
