@@ -47,6 +47,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
+      args:
+        SERVER_URL: ${SERVER_URL:-http://localhost:3300}
     image: ghcr.io/${GITHUB_REPOSITORY:-hobbs1210/pc-remote}/web:latest
     container_name: pc-remote-web
     restart: unless-stopped

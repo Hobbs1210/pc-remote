@@ -1,7 +1,21 @@
 import axios from 'axios'
 import { storage } from '../utils/storage'
 
-export const DEFAULT_API_URL = 'https://pc-remote-backend.onrender.com'
+const getEnvServerUrl = (): string | undefined => {
+  if (typeof process !== 'undefined' && process.env) {
+    const envUrl =
+      process.env.EXPO_PUBLIC_SERVER_URL ||
+      process.env.SERVER_URL ||
+      process.env.REACT_APP_SERVER_URL
+    if (envUrl && envUrl.trim()) {
+      return envUrl.trim().replace(/\/+$/, '')
+    }
+  }
+  return undefined
+}
+
+export const DEFAULT_API_URL =
+  getEnvServerUrl() || 'https://pc-remote-backend.onrender.com'
 const SERVER_URL_KEY = 'serverUrl'
 
 export let API_URL = DEFAULT_API_URL
@@ -20,6 +34,9 @@ export async function loadServerUrl() {
   if (stored) {
     API_URL = stored
     api.defaults.baseURL = `${stored}/api`
+  } else {
+    API_URL = DEFAULT_API_URL
+    api.defaults.baseURL = `${DEFAULT_API_URL}/api`
   }
 }
 

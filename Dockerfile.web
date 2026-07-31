@@ -5,6 +5,11 @@ RUN npm install -g pnpm@9
 
 WORKDIR /app
 
+ARG SERVER_URL
+ARG EXPO_PUBLIC_SERVER_URL
+ENV EXPO_PUBLIC_SERVER_URL=${EXPO_PUBLIC_SERVER_URL:-$SERVER_URL}
+ENV SERVER_URL=${SERVER_URL:-$EXPO_PUBLIC_SERVER_URL}
+
 # Copy workspace dependency manifests for layer caching
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.json ./
 COPY packages/shared/package.json ./packages/shared/
