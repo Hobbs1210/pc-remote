@@ -28,7 +28,15 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "PC Remote",
+      "shortName": "PC Remote",
+      "themeColor": "#0f0f23",
+      "backgroundColor": "#0f0f23",
+      "display": "standalone",
+      "scope": "/",
+      "startUrl": "/",
+      "description": "PC Remote Desktop Control & Management Dashboard"
     },
     "plugins": [
       "expo-secure-store"
