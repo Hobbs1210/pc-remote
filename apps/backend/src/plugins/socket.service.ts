@@ -5,8 +5,14 @@ import {
   LocalUsersPayload,
 } from '@pc-remote/shared'
 
+import { NotificationsService } from '../modules/notifications/notifications.service.js'
+
 export class SocketService {
-  constructor(private prisma: PrismaClient) {}
+  private notificationsService: NotificationsService
+
+  constructor(private prisma: PrismaClient) {
+    this.notificationsService = new NotificationsService(prisma)
+  }
 
   async getDeviceByToken(token: string) {
     return this.prisma.device.findUnique({
@@ -16,17 +22,39 @@ export class SocketService {
   }
 
   async handleAgentConnect(deviceId: string) {
-    await this.prisma.device.update({
+    const device = await this.prisma.device.update({
       where: { id: deviceId },
       data: { status: 'online', lastSeenAt: new Date() },
+      select: { id: true, name: true, userId: true },
     })
+
+    if (device.userId) {
+      this.notificationsService.notifyUser(
+        device.userId,
+        'device.online',
+        'Device Online',
+        `PC Remote Agent on "${device.name}" is now online.`,
+        { deviceId: device.id, name: device.name }
+      ).catch(() => {})
+    }
   }
 
   async handleAgentDisconnect(deviceId: string) {
-    await this.prisma.device.update({
+    const device = await this.prisma.device.update({
       where: { id: deviceId },
       data: { status: 'offline', lastSeenAt: new Date() },
+      select: { id: true, name: true, userId: true },
     })
+
+    if (device.userId) {
+      this.notificationsService.notifyUser(
+        device.userId,
+        'device.offline',
+        'Device Offline',
+        `PC Remote Agent on "${device.name}" disconnected.`,
+        { deviceId: device.id, name: device.name }
+      ).catch(() => {})
+    }
   }
 
   async handleHeartbeat(deviceId: string, payload: HeartbeatPayload) {

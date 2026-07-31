@@ -16,8 +16,10 @@ model User {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
-  devices      Device[]
-  refreshTokens RefreshToken[]
+  devices          Device[]
+  refreshTokens    RefreshToken[]
+  pushSubscriptions PushSubscription[]
+  webhooks         WebhookSubscription[]
 
   @@index([email])
 }
@@ -186,4 +188,30 @@ model DailyUsage {
 
   @@unique([deviceId, date])
   @@index([deviceId, date])
+}
+
+model PushSubscription {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expoPushToken String   @unique
+  deviceName    String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+model WebhookSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  url       String
+  secret    String?
+  events    String[] // e.g. ["device.offline", "device.online", "limit.reached"]
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }

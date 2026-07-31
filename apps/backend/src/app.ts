@@ -21,9 +21,15 @@ await app.register(prismaPlugin)
 await app.register(jwtPlugin)
 await app.register(socketPlugin)
 
+import { metricsPrivateRoutes } from './modules/metrics/metrics.routes.js'
+import { notificationRoutes } from './modules/notifications/notifications.routes.js'
+import { MetricsService } from './modules/metrics/metrics.service.js'
+
 await app.register(authRoutes, { prefix: '/api/auth' })
 await app.register(devicesPublicRoutes, { prefix: '/api/devices' })
 await app.register(devicesPrivateRoutes, { prefix: '/api/devices' })
+await app.register(metricsPrivateRoutes, { prefix: '/api/devices' })
+await app.register(notificationRoutes, { prefix: '/api/notifications' })
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -78,6 +84,13 @@ const start = async () => {
       port: Number(process.env.PORT ?? 3000),
       host: '0.0.0.0',
     })
+
+    // Schedule daily metrics retention pruning (keep last 30 days)
+    const metricsService = new MetricsService(app.prisma)
+    metricsService.pruneMetrics(30).catch(err => app.log.warn({ err }, 'Initial metrics pruning error'))
+    setInterval(() => {
+      metricsService.pruneMetrics(30).catch(err => app.log.warn({ err }, 'Daily metrics pruning error'))
+    }, 24 * 60 * 60 * 1000)
   } catch (err) {
     app.log.error(err)
     process.exit(1)
