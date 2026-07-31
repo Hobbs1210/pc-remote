@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.singleton.1.6.0.schema.json
 PackageIdentifier: Hobbs1210.PCRemoteAgent
-PackageVersion: 0.0.8
+PackageVersion: 0.0.11
 PackageLocale: en-US
 Publisher: Hobbs1210
 PublisherUrl: https://github.com/Hobbs1210
@@ -22,8 +22,8 @@ Tags:
 Installers:
   - Architecture: x64
     InstallerType: inno
-    InstallerUrl: https://github.com/Hobbs1210/pc-remote/releases/download/v0.0.8/pc-remote-agent-setup.exe
-    InstallerSha256: 2876CF88139520FDC3988C399DE74E2498F6C19D3276E5358179FBA5D50C988B
+    InstallerUrl: https://github.com/Hobbs1210/pc-remote/releases/download/v0.0.11/pc-remote-agent-setup.exe
+    InstallerSha256: 4FCC3E6AC96CEB364AFA34859D54B149264A33D6D53ED9548EFF837ED887520F
     Scope: machine
     InstallerModes:
       - interactive
