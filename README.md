@@ -127,11 +127,11 @@ To install silently without interactive wizard prompts:
 winget install Hobbs1210.PCRemoteAgent --silent
 ```
 
-#### Install directly from Remote GitHub Repository
-To install on any computer directly referencing your GitHub repository manifest (without needing to clone):
+#### Install directly from Remote GitHub Repository (One-Liner)
+To install on any computer directly referencing your GitHub repository manifest (without needing to clone the project):
 
-```cmd
-winget install --manifest https://raw.githubusercontent.com/Hobbs1210/pc-remote/main/manifests/Hobbs1210.PCRemoteAgent.yaml
+```powershell
+irm https://raw.githubusercontent.com/Hobbs1210/pc-remote/main/manifests/Hobbs1210.PCRemoteAgent.yaml -OutFile $env:TEMP\agent.yaml; winget install --manifest $env:TEMP\agent.yaml
 ```
 
 #### Install from Local Repository Manifest
