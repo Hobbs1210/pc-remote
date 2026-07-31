@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "pnpm --filter @pc-remote/shared build",
     "dev": "tsx watch src/app.ts",
-    "build": "prisma generate && tsc",
+    "build": "prisma generate && tsc && node -e \"import('node:fs').then(fs => fs.cpSync('src/views', 'dist/views', {recursive: true, force: true}))\"",
     "start": "prisma db push --accept-data-loss && node dist/app.js",
     "typecheck": "tsc --noEmit",
     "db:push": "prisma db push",

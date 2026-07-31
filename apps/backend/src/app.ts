@@ -30,14 +30,24 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const dashboardHtmlPath = path.join(__dirname, 'views', 'dashboard.html')
 let dashboardHtmlCache: string | null = null
 
 function getDashboardHtml(): string {
   if (!dashboardHtmlCache || process.env.NODE_ENV === 'development') {
-    dashboardHtmlCache = fs.readFileSync(dashboardHtmlPath, 'utf-8')
+    const candidatePaths = [
+      path.join(__dirname, 'views', 'dashboard.html'),
+      path.join(__dirname, '..', 'src', 'views', 'dashboard.html'),
+      path.join(__dirname, '..', 'views', 'dashboard.html'),
+    ]
+
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        dashboardHtmlCache = fs.readFileSync(p, 'utf-8')
+        break
+      }
+    }
   }
-  return dashboardHtmlCache
+  return dashboardHtmlCache ?? '<html><body><h1>PC Remote API Server</h1><p>Server online</p></body></html>'
 }
 
 app.get('/', async (req, reply) => {
