@@ -14,7 +14,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useDevicesStore } from '../store/devices'
-import type { ActiveUser, LocalUser, DiskInfo } from '../store/devices'
+import type { ActiveUser, LocalUser, DiskInfo, ProcessInfo } from '../store/devices'
 import { api } from '../api/client'
 import type { RootStackParams } from '../navigation'
 
@@ -547,10 +547,6 @@ export default function ControlScreen({ route }: Props) {
           </View>
         </View>
       </Modal>
-    </ScrollView>
-  )
-}
-
     </ScrollView>
   )
 }
