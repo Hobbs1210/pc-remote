@@ -54,6 +54,25 @@ export interface Device {
   volume?: { level: number; muted: boolean }
 }
 
+export interface DailyUsageData {
+  date: string
+  activeMinutes: number
+  appUsage: Record<string, number>
+}
+
+export interface DeviceMetricData {
+  cpuPercent: number
+  ramPercent: number
+  activeApp: string | null
+  timestamp: string
+}
+
+export interface AnalyticsData {
+  dailyUsages: DailyUsageData[]
+  metrics: DeviceMetricData[]
+  topApps: Array<{ name: string; minutes: number }>
+}
+
 interface DevicesState {
   devices: Device[]
   localUsers: Record<string, LocalUser[]>
@@ -67,10 +86,13 @@ interface DevicesState {
   execTerminal: (deviceId: string, commandText: string) => Promise<{ delivered: boolean; commandId?: string }>
   setVolumeLevel: (deviceId: string, volumePercent: number) => Promise<void>
   emergencyLockAll: () => Promise<{ total: number; locked: number }>
+  fetchAnalytics: (deviceId: string) => Promise<AnalyticsData>
+  triggerAgentUpdate: (deviceId: string) => Promise<{ version: string; downloadUrl: string; delivered: boolean }>
   fetchScreenshot: (deviceId: string) => Promise<{ image: string; capturedAt: string } | null>
   bindDevice: (deviceId: string, secret: string, name: string) => Promise<void>
   deleteDevice: (deviceId: string) => Promise<void>
 }
+
 
 
 
@@ -142,6 +164,17 @@ export const useDevicesStore = create<DevicesState>((set) => ({
       volumePercent,
     })
   },
+
+  fetchAnalytics: async (deviceId) => {
+    const { data } = await api.get<AnalyticsData>(`/devices/${deviceId}/analytics`)
+    return data
+  },
+
+  triggerAgentUpdate: async (deviceId) => {
+    const { data } = await api.post<{ version: string; downloadUrl: string; delivered: boolean }>(`/devices/${deviceId}/update`)
+    return data
+  },
+
 
 
 

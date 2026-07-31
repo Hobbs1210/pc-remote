@@ -2,14 +2,15 @@ import { execSync } from 'node:child_process'
 import { log as logger } from '../utils/logger.js'
 import { setPendingLock, setPendingVolume, setPendingScreenshot } from '../local-server.js'
 import { killProcess, setVolumeLevel } from '../utils/sysinfo.js'
+import { downloadAndInstallUpdate } from '../utils/updater.js'
 import type { CommandPayload } from '@pc-remote/shared'
 
 export async function executeCommand(payload: CommandPayload): Promise<string | void> {
-  const { type, delaySeconds = 0, message, pid, commandText, volumePercent } = payload
+  const { type, delaySeconds = 0, message, pid, commandText, volumePercent, downloadUrl, version } = payload
 
   logger.info({ type, delaySeconds, pid }, 'Executing command')
 
-  if (process.platform !== 'win32' && type !== 'KILL_PROCESS' && type !== 'EXEC_TERMINAL') {
+  if (process.platform !== 'win32' && type !== 'KILL_PROCESS' && type !== 'EXEC_TERMINAL' && type !== 'UPDATE_AGENT') {
     logger.info(`[DEV MODE] Would execute: ${type} after ${delaySeconds}s`)
     return
   }
@@ -105,10 +106,17 @@ export async function executeCommand(payload: CommandPayload): Promise<string | 
       }
       break
 
+    case 'UPDATE_AGENT':
+      if (downloadUrl && version) {
+        return await downloadAndInstallUpdate(downloadUrl, version)
+      }
+      break
+
     default:
       logger.warn({ type }, 'Unknown command type')
   }
 }
+
 
 
 

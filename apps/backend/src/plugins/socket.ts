@@ -1,7 +1,8 @@
 import fp from 'fastify-plugin'
 import { FastifyPluginAsync } from 'fastify'
 import { Server, Socket } from 'socket.io'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
+
 import {
   WS_EVENTS,
   HeartbeatPayloadSchema,
@@ -91,7 +92,11 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
       const { cpuPercent, ramPercent, uptime, activeUsers, agentVersion, disks, macAddress, activeWindow } =
         parsed.data
 
-      await (app.prisma as PrismaClient).device.update({
+      const prisma = app.prisma as PrismaClient
+      const today = new Date().toISOString().split('T')[0]!
+      const activeAppName = activeWindow?.processName || activeWindow?.title || null
+
+      await prisma.device.update({
         where: { id: deviceId },
         data: {
           status: 'online',
@@ -106,7 +111,44 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
           ...(activeWindow !== undefined && { activeWindow }),
         },
       })
+
+      // Record metrics & daily usage
+      try {
+        const currentDaily = await prisma.dailyUsage.findUnique({
+          where: { deviceId_date: { deviceId, date: today } },
+        })
+        const appUsageMap = (currentDaily?.appUsage as Record<string, number> | null) ?? {}
+        if (activeAppName) {
+          appUsageMap[activeAppName] = (appUsageMap[activeAppName] ?? 0) + 1
+        }
+        await Promise.all([
+          prisma.deviceMetric.create({
+            data: {
+              deviceId,
+              cpuPercent,
+              ramPercent,
+              activeApp: activeAppName,
+            },
+          }),
+          prisma.dailyUsage.upsert({
+            where: { deviceId_date: { deviceId, date: today } },
+            create: {
+              deviceId,
+              date: today,
+              activeMinutes: 1,
+              appUsage: appUsageMap as Prisma.InputJsonValue,
+            },
+            update: {
+              activeMinutes: { increment: 1 },
+              appUsage: appUsageMap as Prisma.InputJsonValue,
+            },
+          }),
+        ])
+      } catch {
+        // Ignore metric store errors
+      }
     })
+
 
 
     // Результат выполнения команды от агента

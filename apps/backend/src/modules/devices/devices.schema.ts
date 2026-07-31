@@ -15,7 +15,10 @@ export const SendCommandSchema = z.object({
   pid: z.number().int().optional(),
   commandText: z.string().max(2000).optional(),
   volumePercent: z.number().int().min(0).max(100).optional(),
+  downloadUrl: z.string().url().optional(),
+  version: z.string().optional(),
 })
+
 
 const TimeSchema = z.string().regex(/^\d{2}:\d{2}$/)
 

@@ -71,6 +71,8 @@ model Device {
   commands     Command[]
   auditLogs    AuditLog[]
   localUsers   DeviceUser[]
+  metrics      DeviceMetric[]
+  dailyUsages  DailyUsage[]
 
   @@index([userId])
   @@index([agentToken])
@@ -156,3 +158,32 @@ model AuditLog {
 
   @@index([deviceId, createdAt])
 }
+
+model DeviceMetric {
+  id         String   @id @default(uuid())
+  deviceId   String
+  device     Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  cpuPercent Float
+  ramPercent Float
+  activeApp  String?
+  timestamp  DateTime @default(now())
+
+  @@index([deviceId, timestamp])
+}
+
+model DailyUsage {
+  id            String   @id @default(uuid())
+  deviceId      String
+  device        Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  date          String   // "YYYY-MM-DD"
+  activeMinutes Int      @default(0)
+  appUsage      Json     @default("{}") // { "chrome.exe": 120, "code.exe": 180 }
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([deviceId, date])
+  @@index([deviceId, date])
+}

@@ -14,6 +14,7 @@ export const CommandTypeSchema = z.enum([
   'SHOW_MESSAGE',
   'EXEC_TERMINAL',
   'SET_VOLUME',
+  'UPDATE_AGENT',
 ])
 
 export type CommandType = z.infer<typeof CommandTypeSchema>
@@ -25,7 +26,10 @@ export const CommandPayloadSchema = z.object({
   pid: z.number().int().optional(),
   commandText: z.string().max(2000).optional(),
   volumePercent: z.number().int().min(0).max(100).optional(),
+  downloadUrl: z.string().url().optional(),
+  version: z.string().optional(),
 })
+
 
 export type CommandPayload = z.infer<typeof CommandPayloadSchema>
 

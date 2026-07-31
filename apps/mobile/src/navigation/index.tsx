@@ -10,18 +10,22 @@ import DevicesScreen from '../screens/DevicesScreen'
 import ControlScreen from '../screens/ControlScreen'
 import ScanScreen from '../screens/ScanScreen'
 import ScheduleScreen from '../screens/ScheduleScreen'
+import AnalyticsScreen from '../screens/AnalyticsScreen'
 
 export type RootStackParams = {
   Main: undefined
   Control: { deviceId: string; deviceName: string }
   Scan: undefined
   Schedule: { deviceId: string; deviceName: string }
+  Analytics: { deviceId: string; deviceName: string }
 }
+
 
 export type TabParams = {
   Devices: undefined
   Settings: undefined
 }
+
 
 const Stack = createNativeStackNavigator<RootStackParams>()
 const Tab = createBottomTabNavigator<TabParams>()
@@ -182,7 +186,13 @@ export default function Navigation() {
               component={ScheduleScreen}
               options={({ route }) => ({ title: `Schedule — ${route.params.deviceName}` })}
             />
+            <Stack.Screen
+              name="Analytics"
+              component={AnalyticsScreen}
+              options={({ route }) => ({ title: `Analytics — ${route.params.deviceName}` })}
+            />
           </>
+
         )}
       </Stack.Navigator>
     </NavigationContainer>

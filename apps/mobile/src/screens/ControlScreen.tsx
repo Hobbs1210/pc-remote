@@ -121,7 +121,7 @@ function DiskRow({ disk }: { disk: DiskInfo }) {
 
 export default function ControlScreen({ route }: Props) {
   const { deviceId, deviceName } = route.params
-  const { sendCommand, showMessage, wakeOnLan, execTerminal, setVolumeLevel, devices, localUsers, fetchLocalUsers, fetchScreenshot } = useDevicesStore()
+  const { sendCommand, showMessage, wakeOnLan, execTerminal, setVolumeLevel, triggerAgentUpdate, devices, localUsers, fetchLocalUsers, fetchScreenshot } = useDevicesStore()
   const navigation = useNavigation<Nav>()
   const device = devices.find((d) => d.id === deviceId)
   const deviceLocalUsers = localUsers[deviceId] ?? []
@@ -143,6 +143,31 @@ export default function ControlScreen({ route }: Props) {
   const [terminalLogs, setTerminalLogs] = useState<string[]>(['PS > Connected to PC Remote Console'])
   const [terminalRunning, setTerminalRunning] = useState(false)
   const screenshotPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const handleUpdateAgent = () => {
+    Alert.alert(
+      'Update Agent',
+      `Check GitHub Releases and update agent on "${deviceName}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Update Now',
+          onPress: async () => {
+            try {
+              const res = await triggerAgentUpdate(deviceId)
+              Alert.alert(
+                res.delivered ? '✓ Update Signal Sent' : '⚠ Agent Offline',
+                `Target Version: ${res.version}`
+              )
+            } catch {
+              Alert.alert('Error', 'Failed to trigger agent update')
+            }
+          },
+        },
+      ]
+    )
+  }
+
 
   const runTerminalCommand = async () => {
     if (!terminalCommand.trim() || terminalRunning) return
@@ -403,7 +428,20 @@ export default function ControlScreen({ route }: Props) {
           color="#facc15"
           onPress={() => void triggerWol()}
         />
+        <CommandButton
+          label="Analytics"
+          emoji="📊"
+          color="#6c63ff"
+          onPress={() => navigation.navigate('Analytics', { deviceId, deviceName })}
+        />
+        <CommandButton
+          label="Update Agent"
+          emoji="🚀"
+          color="#ec4899"
+          onPress={handleUpdateAgent}
+        />
       </View>
+
 
 
 

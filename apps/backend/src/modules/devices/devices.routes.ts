@@ -122,6 +122,37 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
   }
 )
 
+  // Analytics & usage statistics
+  app.get<{ Params: { id: string } }>('/:id/analytics', async (request, reply) => {
+    try {
+      const analytics = await service.getAnalytics(request.user.userId, request.params.id)
+      return reply.send(analytics)
+    } catch (err) {
+      if (err instanceof DeviceError) {
+        return reply.status(err.statusCode).send({ error: err.message })
+      }
+      throw err
+    }
+  })
+
+  // Trigger automatic agent update
+  app.post<{ Params: { id: string }; Body: { downloadUrl?: string; version?: string } }>(
+    '/:id/update',
+    async (request, reply) => {
+      try {
+        const { downloadUrl, version } = request.body ?? {}
+        const result = await service.triggerAgentUpdate(request.user.userId, request.params.id, downloadUrl, version)
+        return reply.send(result)
+      } catch (err) {
+        if (err instanceof DeviceError) {
+          return reply.status(err.statusCode).send({ error: err.message })
+        }
+        throw err
+      }
+    }
+  )
+
+
   app.post('/bind', async (request, reply) => {
     const body = BindDeviceSchema.safeParse(request.body)
     if (!body.success) {

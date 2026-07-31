@@ -210,6 +210,8 @@ export class DevicesService {
           pid: input.pid,
           commandText: input.commandText,
           volumePercent: input.volumePercent,
+          downloadUrl: input.downloadUrl,
+          version: input.version,
         },
         status: 'pending',
       },
@@ -223,7 +225,10 @@ export class DevicesService {
       pid: input.pid,
       commandText: input.commandText,
       volumePercent: input.volumePercent,
+      downloadUrl: input.downloadUrl,
+      version: input.version,
     })
+
 
     if (delivered) {
       await this.prisma.command.update({
@@ -323,4 +328,78 @@ export class DevicesService {
 
     await this.prisma.device.delete({ where: { id: deviceId } })
   }
-}
+
+  async getAnalytics(userId: string, deviceId: string) {
+    const device = await this.prisma.device.findFirst({
+      where: { id: deviceId, userId },
+    })
+    if (!device) throw new DeviceError('Device not found', 404)
+
+    const dailyUsages = await this.prisma.dailyUsage.findMany({
+      where: { deviceId },
+      orderBy: { date: 'desc' },
+      take: 7,
+    })
+
+    const metrics = await this.prisma.deviceMetric.findMany({
+      where: { deviceId },
+      orderBy: { timestamp: 'desc' },
+      take: 24,
+    })
+
+    // Compute top apps usage breakdown
+    const appMap: Record<string, number> = {}
+    for (const d of dailyUsages) {
+      const usage = (d.appUsage as Record<string, number> | null) ?? {}
+      for (const [appName, minutes] of Object.entries(usage)) {
+        appMap[appName] = (appMap[appName] ?? 0) + minutes
+      }
+    }
+
+    const topApps = Object.entries(appMap)
+      .map(([name, minutes]) => ({ name, minutes }))
+      .sort((a, b) => b.minutes - a.minutes)
+      .slice(0, 5)
+
+    return {
+      dailyUsages: dailyUsages.reverse(),
+      metrics: metrics.reverse(),
+      topApps,
+    }
+  }
+
+  async triggerAgentUpdate(userId: string, deviceId: string, customUrl?: string, customVersion?: string) {
+    const device = await this.prisma.device.findFirst({
+      where: { id: deviceId, userId },
+    })
+    if (!device) throw new DeviceError('Device not found', 404)
+
+    let version = customVersion ?? 'v0.0.2'
+    let downloadUrl = customUrl ?? 'https://github.com/Hobbs1210/pc-remote/releases/latest/download/PC-Remote-Setup.exe'
+
+    try {
+      if (!customUrl) {
+        const res = await fetch('https://api.github.com/repos/Hobbs1210/pc-remote/releases/latest', {
+          headers: { 'User-Agent': 'PC-Remote-Backend' },
+        })
+        if (res.ok) {
+          const data = (await res.json()) as { tag_name?: string; assets?: Array<{ name: string; browser_download_url: string }> }
+          if (data.tag_name) version = data.tag_name
+          const asset = data.assets?.find((a) => a.name.endsWith('.exe'))
+          if (asset?.browser_download_url) downloadUrl = asset.browser_download_url
+        }
+      }
+    } catch {
+      // Fallback to default release URL
+    }
+
+    const result = await this.sendCommand(userId, deviceId, {
+      type: 'UPDATE_AGENT',
+      delaySeconds: 0,
+      downloadUrl,
+      version,
+    })
+
+    return { version, downloadUrl, delivered: result.delivered }
+  }
+}
