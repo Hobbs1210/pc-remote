@@ -5,11 +5,6 @@ on:
     branches: [main]
     tags:
       - 'v*.*.*'
-    paths:
-      - 'apps/agent/**'
-      - 'packages/shared/**'
-      - '.github/workflows/build-agent.yml'
-      - 'installer/**'
   workflow_dispatch:
 
 permissions:
@@ -98,4 +93,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: installer/output/pc-remote-agent-setup.exe
-          generate_release_notes: true
+          generate_release_notes: true
