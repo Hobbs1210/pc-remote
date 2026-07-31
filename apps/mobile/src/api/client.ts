@@ -1,5 +1,5 @@
 import axios from 'axios'
-import * as SecureStore from 'expo-secure-store'
+import { storage } from '../utils/storage'
 
 export const DEFAULT_API_URL = 'https://pc-remote-backend.onrender.com'
 const SERVER_URL_KEY = 'serverUrl'
@@ -16,7 +16,7 @@ export const api = axios.create({
 
 /** Загружает сохранённый URL при старте приложения */
 export async function loadServerUrl() {
-  const stored = await SecureStore.getItemAsync(SERVER_URL_KEY)
+  const stored = await storage.getItem(SERVER_URL_KEY)
   if (stored) {
     API_URL = stored
     api.defaults.baseURL = `${stored}/api`
@@ -26,13 +26,13 @@ export async function loadServerUrl() {
 /** Сохраняет новый URL и обновляет axios */
 export async function setServerUrl(url: string) {
   const clean = url.trim().replace(/\/+$/, '')
-  await SecureStore.setItemAsync(SERVER_URL_KEY, clean)
+  await storage.setItem(SERVER_URL_KEY, clean)
   API_URL = clean
   api.defaults.baseURL = `${clean}/api`
 }
 
 api.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync('accessToken')
+  const token = await storage.getItem('accessToken')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -46,18 +46,18 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
       try {
-        const refreshToken = await SecureStore.getItemAsync('refreshToken')
+        const refreshToken = await storage.getItem('refreshToken')
         if (!refreshToken) throw new Error('No refresh token')
         const { data } = await axios.post(`${API_URL}/api/auth/refresh`, {
           refreshToken,
         })
-        await SecureStore.setItemAsync('accessToken', data.accessToken)
-        await SecureStore.setItemAsync('refreshToken', data.refreshToken)
+        await storage.setItem('accessToken', data.accessToken)
+        await storage.setItem('refreshToken', data.refreshToken)
         original.headers.Authorization = `Bearer ${data.accessToken}`
         return api(original)
       } catch {
-        await SecureStore.deleteItemAsync('accessToken')
-        await SecureStore.deleteItemAsync('refreshToken')
+        await storage.deleteItem('accessToken')
+        await storage.deleteItem('refreshToken')
       }
     }
     return Promise.reject(error)

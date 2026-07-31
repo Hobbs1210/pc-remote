@@ -73,9 +73,26 @@ cd ../..
 
 ---
 
+## Web App (Docker Container)
+
+**Требования:** Docker Desktop запущен.
+
+```bash
+# Сборка веб-контейнера и запуск в Docker Compose
+docker compose up -d --build
+
+# Веб-интерфейс будет доступен по адресу:
+# http://localhost:8877
+```
+
+**Результат:** Запущенный веб-контейнер Nginx на порту `8877` с приложением PC Remote Web.
+
+---
+
 ## Итого
 
 | Артефакт | Команда | Время |
 |---|---|---|
 | `apps/mobile/build/app.apk` | `.\build-apk.ps1 -ExpoToken '...'` | ~15 мин |
 | `installer/output/pc-remote-agent-setup.exe` | `pnpm bundle && pnpm package:win` + ISCC | ~3 мин |
+| Web Docker Container (`:8877`) | `docker compose up -d --build` | ~2 мин |

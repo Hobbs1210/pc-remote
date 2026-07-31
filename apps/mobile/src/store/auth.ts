@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import * as SecureStore from 'expo-secure-store'
+import { storage } from '../utils/storage'
 import { api } from '../api/client'
 
 interface AuthState {
@@ -16,31 +16,32 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   checkAuth: async () => {
-    const token = await SecureStore.getItemAsync('accessToken')
+    const token = await storage.getItem('accessToken')
     set({ isAuthenticated: !!token, isLoading: false })
   },
 
   login: async (email, password) => {
     const { data } = await api.post('/auth/login', { email, password })
-    await SecureStore.setItemAsync('accessToken', data.accessToken)
-    await SecureStore.setItemAsync('refreshToken', data.refreshToken)
+    await storage.setItem('accessToken', data.accessToken)
+    await storage.setItem('refreshToken', data.refreshToken)
     set({ isAuthenticated: true })
   },
 
   register: async (email, password) => {
     const { data } = await api.post('/auth/register', { email, password })
-    await SecureStore.setItemAsync('accessToken', data.accessToken)
-    await SecureStore.setItemAsync('refreshToken', data.refreshToken)
+    await storage.setItem('accessToken', data.accessToken)
+    await storage.setItem('refreshToken', data.refreshToken)
     set({ isAuthenticated: true })
   },
 
   logout: async () => {
-    const refreshToken = await SecureStore.getItemAsync('refreshToken')
+    const refreshToken = await storage.getItem('refreshToken')
     if (refreshToken) {
       await api.post('/auth/logout', { refreshToken }).catch(() => {})
     }
-    await SecureStore.deleteItemAsync('accessToken')
-    await SecureStore.deleteItemAsync('refreshToken')
+    await storage.deleteItem('accessToken')
+    await storage.deleteItem('refreshToken')
     set({ isAuthenticated: false })
   },
 }))
+

@@ -43,6 +43,21 @@ services:
     networks:
       - pc-remote-net
 
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: ghcr.io/${GITHUB_REPOSITORY:-hobbs1210/pc-remote}/web:latest
+    container_name: pc-remote-web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8877}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - pc-remote-net
+
 volumes:
   postgres_data:
 
