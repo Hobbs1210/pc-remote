@@ -279,9 +279,12 @@ export class DevicesService {
     if (!device) throw new DeviceError('Device not found', 404)
 
     const data = {
-      ...input,
+      enabled: input.enabled,
+      timezone: input.timezone,
+      days: input.days as Prisma.InputJsonValue,
       downtime: input.downtime !== undefined ? (input.downtime as Prisma.InputJsonValue) : Prisma.JsonNull,
       dailyLimit: input.dailyLimit !== undefined ? (input.dailyLimit as Prisma.InputJsonValue) : Prisma.JsonNull,
+      blockedApps: (input.blockedApps ?? []) as Prisma.InputJsonValue,
     }
 
     const schedule = await this.prisma.schedule.upsert({
@@ -289,6 +292,7 @@ export class DevicesService {
       create: { deviceId, ...data },
       update: data,
     })
+
 
     // Отправляем обновление агенту через WebSocket
     this.app.sendEvent(deviceId, WS_EVENTS.SERVER_SCHEDULE_UPDATE, schedule)
