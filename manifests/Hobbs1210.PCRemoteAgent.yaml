@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.singleton.1.6.0.schema.json
+PackageIdentifier: Hobbs1210.PCRemoteAgent
+PackageVersion: 0.0.2
+PackageLocale: en-US
+Publisher: Hobbs1210
+PublisherUrl: https://github.com/Hobbs1210
+PublisherSupportUrl: https://github.com/Hobbs1210/pc-remote/issues
+Author: Hobbs1210
+PackageName: PC Remote Agent
+PackageUrl: https://github.com/Hobbs1210/pc-remote
+License: MIT
+LicenseUrl: https://github.com/Hobbs1210/pc-remote/blob/main/LICENSE
+Copyright: Copyright (c) 2026 Hobbs1210
+ShortDescription: Remote management and monitoring agent service for Windows PCs.
+Description: PC Remote Agent is a Windows background service and system tray companion for remotely controlling power, monitoring CPU/RAM/disks, taking desktop screenshots, and enforcing usage time limits via the PC Remote mobile app.
+Moniker: pcremote
+Tags:
+  - remote-control
+  - system-monitoring
+  - windows-agent
+  - pc-remote
+Installers:
+  - Architecture: x64
+    InstallerType: inno
+    InstallerUrl: https://github.com/Hobbs1210/pc-remote/releases/download/v0.0.2/pc-remote-agent-setup.exe
+    InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
+    Scope: machine
+    InstallerSwitches:
+      Silent: /VERYSILENT /SUPPRESSMSGBOXES
+      SilentWithProgress: /SILENT
+ManifestType: singleton
+ManifestVersion: 1.6.0

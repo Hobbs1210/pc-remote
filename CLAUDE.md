@@ -37,7 +37,7 @@ pc-remote/
 ### 2. Клонирование и установка
 
 ```bash
-git clone https://github.com/DNikulshin/pc-remote.git
+git clone https://github.com/Hobbs1210/pc-remote.git
 cd pc-remote
 pnpm install
 ```

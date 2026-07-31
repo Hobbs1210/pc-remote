@@ -99,10 +99,44 @@ pc-remote/
 ├── installer/
 │   ├── installer.iss    # Inno Setup Windows installer compiler script
 │   └── tray.ps1         # Windows PowerShell system tray menu companion
+├── manifests/
+│   └── Hobbs1210.PCRemoteAgent.yaml # Winget package manifest definition
 ├── docker-compose.yml   # Dev PostgreSQL 16 + Adminer containers
 ├── build-apk.ps1        # PowerShell automated Android APK builder script
 └── build-installer.ps1  # PowerShell Windows setup installer compiler script
 ```
+
+---
+
+## 💻 Agent Installation
+
+You can install the PC Remote Agent on any Windows PC using **Windows Package Manager (Winget)** or the standalone setup installer.
+
+### 1. Install via Winget (Recommended)
+
+To install the latest published release of PC Remote Agent via Winget:
+
+```cmd
+winget install Hobbs1210.PCRemoteAgent
+```
+
+#### Silent / Unattended Installation
+To install silently without interactive wizard prompts:
+
+```cmd
+winget install Hobbs1210.PCRemoteAgent --silent
+```
+
+#### Install from Local Repository Manifest
+To test or install from the local repository manifest file:
+
+```cmd
+winget install --manifest ./manifests/Hobbs1210.PCRemoteAgent.yaml
+```
+
+### 2. Standalone Windows Installer (`.exe`)
+
+Download `pc-remote-agent-setup.exe` directly from the [GitHub Releases](https://github.com/Hobbs1210/pc-remote/releases) page and run the installer.
 
 ---
 
@@ -120,7 +154,7 @@ pc-remote/
 Clone the repository and install all monorepo dependencies:
 
 ```bash
-git clone https://github.com/DNikulshin/pc-remote.git
+git clone https://github.com/Hobbs1210/pc-remote.git
 cd pc-remote
 pnpm install
 ```
@@ -241,6 +275,14 @@ Automated via PowerShell script using local Docker EAS build:
 ```
 Output artifact: `apps/mobile/build/app.apk`
 
+### 3. Winget Package Manifest
+
+To validate the Winget manifest locally:
+
+```cmd
+winget validate --manifest ./manifests/Hobbs1210.PCRemoteAgent.yaml
+```
+
 For detailed build instructions, see [BUILD.md](BUILD.md).
 
 ---
@@ -273,4 +315,5 @@ For detailed test coverage and testing documentation, see [TESTING.md](TESTING.m
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more details.
+Distributed under the MIT License. See `LICENSE` for more details.
+

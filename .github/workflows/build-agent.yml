@@ -88,9 +88,43 @@ jobs:
           path: installer/output/pc-remote-agent-setup.exe
           retention-days: 30
 
+      - name: Calculate SHA256 & Update Winget Manifest
+        shell: powershell
+        run: |
+          $exePath = "installer/output/pc-remote-agent-setup.exe"
+          $hash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash
+          $tagVersion = "${{ github.ref_name }}".TrimStart('v')
+          $version = if ($tagVersion -and $tagVersion -match '^\d+\.\d+\.\d+') { $tagVersion } else { "0.0.2" }
+          
+          Write-Host "Installer SHA256: $hash"
+          Write-Host "Target Version:   $version"
+
+          $manifestPath = "manifests/Hobbs1210.PCRemoteAgent.yaml"
+          if (Test-Path $manifestPath) {
+            $content = Get-Content $manifestPath -Raw
+            $content = $content -replace 'PackageVersion: .*', "PackageVersion: $version"
+            $content = $content -replace 'InstallerUrl: .*', "InstallerUrl: https://github.com/Hobbs1210/pc-remote/releases/download/v$version/pc-remote-agent-setup.exe"
+            $content = $content -replace 'InstallerSha256: .*', "InstallerSha256: $hash"
+            Set-Content -Path $manifestPath -Value $content -NoNewline
+            Write-Host "Updated Winget manifest $manifestPath"
+          }
+
+      - name: Commit updated manifest
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: powershell
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add manifests/Hobbs1210.PCRemoteAgent.yaml
+          git commit -m "chore(release): update winget manifest SHA256 & version for ${{ github.ref_name }}" || exit 0
+          git push origin HEAD:main
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: installer/output/pc-remote-agent-setup.exe
+          files: |
+            installer/output/pc-remote-agent-setup.exe
+            manifests/Hobbs1210.PCRemoteAgent.yaml
           generate_release_notes: true
+
