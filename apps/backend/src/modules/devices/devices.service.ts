@@ -324,7 +324,7 @@ export class DevicesService {
     if (!device) throw new DeviceError('Device not found', 404)
 
     // Уведомляем агент до удаления — пока socket ещё аутентифицирован
-    this.app.io.of('/agents').to(deviceId).emit(WS_EVENTS.SERVER_UNBIND)
+    this.app.io.of('/agents').to(deviceId).emit(WS_EVENTS.SERVER_UNBIND, { deviceId })
 
     await this.prisma.device.delete({ where: { id: deviceId } })
   }
@@ -402,4 +402,47 @@ export class DevicesService {
 
     return { version, downloadUrl, delivered: result.delivered }
   }
-}
+
+  async getAgentToken(deviceId: string) {
+    const device = await this.prisma.device.findUnique({
+      where: { id: deviceId },
+      select: { agentToken: true },
+    })
+
+    if (!device) throw new DeviceError('Device not found', 404)
+    return { agentToken: device.agentToken ?? null }
+  }
+
+  async getDeviceUsers(userId: string, deviceId: string) {
+    const device = await this.prisma.device.findFirst({
+      where: { id: deviceId, userId },
+      select: { id: true },
+    })
+
+    if (!device) throw new DeviceError('Device not found', 404)
+
+    return this.prisma.deviceUser.findMany({
+      where: { deviceId },
+      orderBy: { name: 'asc' },
+    })
+  }
+
+  async getCommandHistory(userId: string, deviceId: string, limit = 20) {
+    const device = await this.prisma.device.findFirst({
+      where: { id: deviceId, userId },
+      select: { id: true },
+    })
+
+    if (!device) throw new DeviceError('Device not found', 404)
+
+    return this.prisma.command.findMany({
+      where: {
+        deviceId,
+        device: { userId },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    })
+  }
+}
+

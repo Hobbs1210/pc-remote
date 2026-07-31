@@ -6,6 +6,7 @@
     "test": "pnpm -r test",
     "dev:backend": "pnpm --filter backend dev",
     "dev:agent": "pnpm --filter agent dev",
+    "dev:mobile": "pnpm --filter mobile start",
     "build:shared": "pnpm --filter shared build",
     "typecheck": "pnpm -r typecheck"
   },

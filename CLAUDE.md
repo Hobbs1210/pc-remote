@@ -87,9 +87,9 @@ node dist/agent.cjs --set-password <pwd> # установить пароль т�
 # Установить Expo Go на телефон (SDK 55)
 # Телефон и ПК должны быть в одной Wi-Fi сети
 
-cd apps/mobile
-npm install      # mobile использует npm, не pnpm
-npx expo start   # локальная сеть
+pnpm dev:mobile    # запуск мобильного приложения через pnpm workspace
+# или
+cd apps/mobile && pnpm start
 
 # Или для разработки через туннели (телефон на другой сети):
 ./mobile-start.sh  # запускает ngrok (backend) + localtunnel (Metro)

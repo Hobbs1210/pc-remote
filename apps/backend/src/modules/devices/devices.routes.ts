@@ -12,17 +12,15 @@ const devicesPublicRoutes: FastifyPluginAsync = async (app) => {
   const service = new DevicesService(app.prisma, app)
 
   app.get<{ Params: { id: string } }>('/:id/token', async (request, reply) => {
-    const device = await app.prisma.device.findUnique({
-      where: { id: request.params.id },
-      select: { agentToken: true },
-    })
-  
-    if (!device) {
-      return reply.status(404).send({ error: 'Device not found' })
+    try {
+      const result = await service.getAgentToken(request.params.id)
+      return reply.send(result)
+    } catch (err) {
+      if (err instanceof DeviceError) {
+        return reply.status(err.statusCode).send({ error: err.message })
+      }
+      throw err
     }
-  
-    // Возвращаем токен только если устройство привязано
-    return reply.send({ agentToken: device.agentToken ?? null })
   })
 
   app.post('/init', async (request, reply) => {
@@ -82,45 +80,32 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
 
   // Локальные пользователи Windows на устройстве
   app.get<{ Params: { id: string } }>('/:id/users', async (request, reply) => {
-    const device = await app.prisma.device.findFirst({
-      where: { id: request.params.id, userId: request.user.userId },
-      select: { id: true },
-    })
-
-    if (!device) {
-      return reply.status(404).send({ error: 'Device not found' })
-    }
-
-    const users = await app.prisma.deviceUser.findMany({
-      where: { deviceId: request.params.id },
-      orderBy: { name: 'asc' },
-    })
-
-    return reply.send(users)
-  })
-
-  // История команд устройства
-  app.get<{ Params: { id: string } }>(
-  '/:id/commands',
-  async (request, reply) => {
     try {
-      const commands = await app.prisma.command.findMany({
-        where: {
-          deviceId: request.params.id,
-          device: { userId: request.user.userId },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-      })
-      return reply.send(commands)
+      const users = await service.getDeviceUsers(request.user.userId, request.params.id)
+      return reply.send(users)
     } catch (err) {
       if (err instanceof DeviceError) {
         return reply.status(err.statusCode).send({ error: err.message })
       }
       throw err
     }
-  }
-)
+  })
+
+  // История команд устройства
+  app.get<{ Params: { id: string } }>(
+    '/:id/commands',
+    async (request, reply) => {
+      try {
+        const commands = await service.getCommandHistory(request.user.userId, request.params.id)
+        return reply.send(commands)
+      } catch (err) {
+        if (err instanceof DeviceError) {
+          return reply.status(err.statusCode).send({ error: err.message })
+        }
+        throw err
+      }
+    }
+  )
 
   // Analytics & usage statistics
   app.get<{ Params: { id: string } }>('/:id/analytics', async (request, reply) => {

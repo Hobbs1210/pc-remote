@@ -1,45 +1,44 @@
 import fp from 'fastify-plugin'
 import { FastifyPluginAsync } from 'fastify'
 import { Server, Socket } from 'socket.io'
-import { PrismaClient, Prisma } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 
 import {
   WS_EVENTS,
   HeartbeatPayloadSchema,
   CommandResultSchema,
   LocalUsersPayloadSchema,
+  AgentToServerEvents,
+  ServerToAgentEvents,
+  InterServerEvents,
+  SocketData,
 } from '@pc-remote/shared'
+import { SocketService } from './socket.service.js'
 
 // Расширяем FastifyInstance
 declare module 'fastify' {
   interface FastifyInstance {
-    io: Server
+    io: Server<AgentToServerEvents, ServerToAgentEvents, InterServerEvents, SocketData>
     sendCommand: (deviceId: string, payload: unknown) => boolean
     sendEvent: (deviceId: string, event: string, payload: unknown) => boolean
     getDeviceScreenshot: (deviceId: string) => { image: string; capturedAt: string } | null
   }
 }
 
-// Мета-данные подключённого агента
-interface AgentSocket extends Socket {
-  data: {
-    deviceId: string
-    agentVersion: string
-  }
-}
+type AgentSocket = Socket<AgentToServerEvents, ServerToAgentEvents, InterServerEvents, SocketData>
 
 const screenshotCache = new Map<string, { image: string; capturedAt: string }>()
 
 const socketPlugin: FastifyPluginAsync = fp(async (app) => {
-  const io = new Server(app.server, {
+  const socketService = new SocketService(app.prisma as PrismaClient)
+
+  const io = new Server<AgentToServerEvents, ServerToAgentEvents, InterServerEvents, SocketData>(app.server, {
     cors: {
       origin: process.env.ALLOWED_ORIGINS?.split(',') ?? '*',
       methods: ['GET', 'POST'],
     },
-    // Агент переподключается при обрыве
     pingTimeout: 20000,
     pingInterval: 10000,
-    // Скриншоты могут весить до 2MB в base64
     maxHttpBufferSize: 5 * 1024 * 1024,
   })
 
@@ -54,10 +53,7 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
       return next(new Error('Missing agent token'))
     }
 
-    const device = await (app.prisma as PrismaClient).device.findUnique({
-      where: { agentToken: token },
-      select: { id: true, agentVersion: true },
-    })
+    const device = await socketService.getDeviceByToken(token)
 
     if (!device) {
       return next(new Error('Invalid agent token'))
@@ -72,14 +68,8 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
     const { deviceId } = socket.data
     app.log.info({ deviceId }, 'Agent connected')
 
-    // Агент входит в свою комнату — команды шлём в эту комнату
     void socket.join(deviceId)
-
-    // Обновляем статус на online
-    void (app.prisma as PrismaClient).device.update({
-      where: { id: deviceId },
-      data: { status: 'online', lastSeenAt: new Date() },
-    })
+    void socketService.handleAgentConnect(deviceId)
 
     // Heartbeat от агента
     socket.on(WS_EVENTS.AGENT_HEARTBEAT, async (raw: unknown) => {
@@ -89,67 +79,8 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
         return
       }
 
-      const { cpuPercent, ramPercent, uptime, activeUsers, agentVersion, disks, macAddress, activeWindow } =
-        parsed.data
-
-      const prisma = app.prisma as PrismaClient
-      const today = new Date().toISOString().split('T')[0]!
-      const activeAppName = activeWindow?.processName || activeWindow?.title || null
-
-      await prisma.device.update({
-        where: { id: deviceId },
-        data: {
-          status: 'online',
-          lastSeenAt: new Date(),
-          cpuPercent,
-          ramPercent,
-          uptime,
-          activeUsers,
-          agentVersion,
-          ...(disks !== undefined && { disks }),
-          ...(macAddress !== undefined && { macAddress }),
-          ...(activeWindow !== undefined && { activeWindow }),
-        },
-      })
-
-      // Record metrics & daily usage
-      try {
-        const currentDaily = await prisma.dailyUsage.findUnique({
-          where: { deviceId_date: { deviceId, date: today } },
-        })
-        const appUsageMap = (currentDaily?.appUsage as Record<string, number> | null) ?? {}
-        if (activeAppName) {
-          appUsageMap[activeAppName] = (appUsageMap[activeAppName] ?? 0) + 1
-        }
-        await Promise.all([
-          prisma.deviceMetric.create({
-            data: {
-              deviceId,
-              cpuPercent,
-              ramPercent,
-              activeApp: activeAppName,
-            },
-          }),
-          prisma.dailyUsage.upsert({
-            where: { deviceId_date: { deviceId, date: today } },
-            create: {
-              deviceId,
-              date: today,
-              activeMinutes: 1,
-              appUsage: appUsageMap as Prisma.InputJsonValue,
-            },
-            update: {
-              activeMinutes: { increment: 1 },
-              appUsage: appUsageMap as Prisma.InputJsonValue,
-            },
-          }),
-        ])
-      } catch {
-        // Ignore metric store errors
-      }
+      await socketService.handleHeartbeat(deviceId, parsed.data)
     })
-
-
 
     // Результат выполнения команды от агента
     socket.on(WS_EVENTS.AGENT_COMMAND_RESULT, async (raw: unknown) => {
@@ -159,28 +90,8 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
         return
       }
 
-      const { commandId, success, error, output, executedAt } = parsed.data
-
-      await (app.prisma as PrismaClient).command.update({
-        where: { id: commandId },
-        data: {
-          status: success ? 'executed' : 'failed',
-          executedAt: new Date(executedAt),
-          error: error ?? null,
-          ...(output !== undefined && { payload: { output } }),
-        },
-      })
-
-      // Логируем в AuditLog
-      await (app.prisma as PrismaClient).auditLog.create({
-        data: {
-          deviceId,
-          event: success ? 'command_executed' : 'command_failed',
-          details: { commandId, error },
-        },
-      })
-
-      app.log.info({ deviceId, commandId, success }, 'Command result received')
+      await socketService.handleCommandResult(deviceId, parsed.data)
+      app.log.info({ deviceId, commandId: parsed.data.commandId, success: parsed.data.success }, 'Command result received')
     })
 
     // Скриншот от агента — сохраняем в кэш и в БД
@@ -188,15 +99,10 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
       const payload = raw as Record<string, unknown>
       const image = payload['image'] as string | undefined
       if (image) {
-        // Используем серверное время — не зависим от часов агента
         const now = new Date()
         screenshotCache.set(deviceId, { image, capturedAt: now.toISOString() })
         app.log.info({ deviceId }, 'Screenshot cached')
-        // Сохраняем в БД на случай перезапуска инстанса
-        void (app.prisma as PrismaClient).device.update({
-          where: { id: deviceId },
-          data: { screenshotImage: image, screenshotAt: now },
-        })
+        void socketService.handleScreenshot(deviceId, image, now)
       }
     })
 
@@ -208,41 +114,23 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
         return
       }
 
-      const { users } = parsed.data
-
-      await (app.prisma as PrismaClient).$transaction([
-        (app.prisma as PrismaClient).deviceUser.deleteMany({ where: { deviceId } }),
-        (app.prisma as PrismaClient).deviceUser.createMany({
-          data: users.map((u) => ({
-            deviceId,
-            name: u.name,
-            fullName: u.fullName,
-            enabled: u.enabled,
-          })),
-        }),
-      ])
-
-      app.log.info({ deviceId, count: users.length }, 'Local users synced')
+      await socketService.handleLocalUsers(deviceId, parsed.data)
+      app.log.info({ deviceId, count: parsed.data.users.length }, 'Local users synced')
     })
 
     // Агент отключился
     socket.on('disconnect', async (reason) => {
       app.log.info({ deviceId, reason }, 'Agent disconnected')
-
-      await (app.prisma as PrismaClient).device.update({
-        where: { id: deviceId },
-        data: { status: 'offline' },
-      })
+      await socketService.handleAgentDisconnect(deviceId)
     })
   })
 
   // Декоратор для отправки команды конкретному агенту
-  // Возвращает true если агент online, false если нет
   app.decorate('sendCommand', (deviceId: string, payload: unknown): boolean => {
     const room = agents.adapter.rooms.get(deviceId)
     if (!room || room.size === 0) return false
 
-    agents.to(deviceId).emit(WS_EVENTS.SERVER_COMMAND, payload)
+    agents.to(deviceId).emit(WS_EVENTS.SERVER_COMMAND, payload as any)
     return true
   })
 
@@ -250,7 +138,7 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
     const room = agents.adapter.rooms.get(deviceId)
     if (!room || room.size === 0) return false
 
-    agents.to(deviceId).emit(event, payload)
+    agents.to(deviceId).emit(event as any, payload as any)
     return true
   })
 
@@ -268,7 +156,7 @@ const socketPlugin: FastifyPluginAsync = fp(async (app) => {
       },
       data: { status: 'away' },
     })
-  }, 30_000) // проверяем каждые 30 секунд
+  }, 30_000)
 
   app.addHook('onClose', () => {
     clearInterval(staleCheckInterval)
