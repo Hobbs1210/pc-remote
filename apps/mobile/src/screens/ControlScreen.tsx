@@ -33,7 +33,7 @@ function UserRow({ user }: { user: ActiveUser }) {
       <View style={styles.userInfo}>
         <Text style={styles.userName}>{user.name}</Text>
         <Text style={styles.userMeta}>
-          {isRemote ? 'Remote Desktop' : 'Локальная сессия'}
+          {isRemote ? 'Remote Desktop' : 'Local Session'}
           {' · '}
           {user.logonTime}
         </Text>
@@ -61,7 +61,7 @@ function LocalUserRow({ user }: { user: LocalUser }) {
       </View>
       <View style={[styles.userStateBadge, { backgroundColor: user.enabled ? '#4ade8022' : '#88888822' }]}>
         <Text style={[styles.userStateText, { color: user.enabled ? '#4ade80' : '#888' }]}>
-          {user.enabled ? 'Активен' : 'Отключён'}
+          {user.enabled ? 'Enabled' : 'Disabled'}
         </Text>
       </View>
     </View>
@@ -125,7 +125,6 @@ export default function ControlScreen({ route }: Props) {
     setScreenshotLoading(true)
     setScreenshotData(null)
     setScreenshotModal(true)
-    // Запоминаем время до команды, чтобы принять только свежий скриншот
     const before = new Date().toISOString()
     try {
       await sendCommand(deviceId, 'SCREENSHOT', 0)
@@ -133,7 +132,6 @@ export default function ControlScreen({ route }: Props) {
       setScreenshotLoading(false)
       return
     }
-    // Поллинг до 30 секунд
     let attempts = 0
     screenshotPollRef.current = setInterval(async () => {
       attempts++
@@ -147,7 +145,7 @@ export default function ControlScreen({ route }: Props) {
         clearInterval(screenshotPollRef.current!)
         screenshotPollRef.current = null
         setScreenshotLoading(false)
-        Alert.alert('Timeout', 'Скриншот не получен')
+        Alert.alert('Timeout', 'Screenshot not received')
         setScreenshotModal(false)
       }
     }, 2000)
@@ -156,9 +154,9 @@ export default function ControlScreen({ route }: Props) {
   const addBonusTime = async (minutes: number) => {
     try {
       await api.post(`/devices/${deviceId}/schedule/bonus`, { minutes })
-      Alert.alert('✓ Бонус добавлен', `+${minutes} мин к дневному лимиту`)
+      Alert.alert('✓ Bonus Added', `+${minutes} min added to daily limit`)
     } catch {
-      Alert.alert('Ошибка', 'Не удалось добавить время')
+      Alert.alert('Error', 'Failed to add bonus time')
     }
   }
 
@@ -166,31 +164,31 @@ export default function ControlScreen({ route }: Props) {
     try {
       const result = await sendCommand(deviceId, type, delay)
       Alert.alert(
-        result.delivered ? '✓ Команда отправлена' : '⚠ Устройство оффлайн',
+        result.delivered ? '✓ Command Sent' : '⚠ Device Offline',
         result.delivered
-          ? `${type} будет выполнен${delay > 0 ? ` через ${delay} сек` : ''}`
-          : 'Команда сохранена и выполнится при подключении'
+          ? `${type} will be executed${delay > 0 ? ` in ${delay} seconds` : ''}`
+          : 'Command queued and will execute when device connects'
       )
     } catch {
-      Alert.alert('Ошибка', 'Не удалось отправить команду')
+      Alert.alert('Error', 'Failed to send command')
     }
   }
 
   const confirmCommand = (type: string) => {
     Alert.alert(
-      'Подтвердите действие',
-      `Выполнить ${type} на "${deviceName}"?`,
+      'Confirm Action',
+      `Execute ${type} on "${deviceName}"?`,
       [
-        { text: 'Отмена', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'С задержкой',
+          text: 'With Delay',
           onPress: () => {
             setPendingCommand(type)
             setDelayModal(true)
           },
         },
         {
-          text: 'Сейчас',
+          text: 'Now',
           style: 'destructive',
           onPress: () => void executeCommand(type, 0),
         },
@@ -200,7 +198,7 @@ export default function ControlScreen({ route }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Статус */}
+      {/* Status */}
       <View style={styles.statusCard}>
         <View style={styles.statusRow}>
           <View
@@ -238,68 +236,68 @@ export default function ControlScreen({ route }: Props) {
         )}
       </View>
 
-      {/* Команды */}
-      <Text style={styles.sectionTitle}>Управление</Text>
+      {/* Commands */}
+      <Text style={styles.sectionTitle}>Controls</Text>
       <View style={styles.cmdGrid}>
         <CommandButton
-          label="Выключить"
+          label="Shutdown"
           emoji="⏻"
           color="#ef4444"
           onPress={() => confirmCommand('SHUTDOWN')}
         />
         <CommandButton
-          label="Перезагрузить"
+          label="Restart"
           emoji="↺"
           color="#f97316"
           onPress={() => confirmCommand('REBOOT')}
         />
         <CommandButton
-          label="Заблокировать"
+          label="Lock"
           emoji="🔒"
           color="#6c63ff"
           onPress={() => void executeCommand('LOCK', 0)}
         />
         <CommandButton
-          label="Сон"
+          label="Sleep"
           emoji="💤"
           color="#22d3ee"
           onPress={() => void executeCommand('SLEEP', 0)}
         />
       </View>
 
-      {/* Громкость */}
-      <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Громкость</Text>
+      {/* Volume */}
+      <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Volume</Text>
       <View style={styles.cmdGrid}>
         <CommandButton
-          label="Тише"
+          label="Vol Down"
           emoji="🔉"
           color="#22d3ee"
           onPress={() => void executeCommand('VOLUME_DOWN', 0)}
         />
         <CommandButton
-          label="Громче"
+          label="Vol Up"
           emoji="🔊"
           color="#22d3ee"
           onPress={() => void executeCommand('VOLUME_UP', 0)}
         />
         <CommandButton
-          label="Без звука"
+          label="Mute"
           emoji="🔇"
           color="#888"
           onPress={() => void executeCommand('VOLUME_MUTE', 0)}
         />
         <CommandButton
-          label="Скриншот"
+          label="Screenshot"
           emoji="📷"
           color="#a78bfa"
           onPress={() => void takeScreenshot()}
         />
       </View>
 
-      {/* Диски */}
+      {/* Disks */}
       {device?.status === 'online' && (device?.disks?.length ?? 0) > 0 && (
         <>
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Диски</Text>
+          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Disks</Text>
           <View style={styles.usersCard}>
             {device.disks.map((d) => (
               <DiskRow key={d.mount} disk={d} />
@@ -308,10 +306,10 @@ export default function ControlScreen({ route }: Props) {
         </>
       )}
 
-      {/* Пользователи */}
+      {/* Active Sessions */}
       {device?.status === 'online' && (device?.activeUsers?.length ?? 0) > 0 && (
         <>
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Пользователи</Text>
+          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Active Sessions</Text>
           <View style={styles.usersCard}>
             {device.activeUsers.map((u, i) => (
               <UserRow key={u.name + i} user={u} />
@@ -320,10 +318,10 @@ export default function ControlScreen({ route }: Props) {
         </>
       )}
 
-      {/* Учётные записи ПК */}
+      {/* Local PC Accounts */}
       {deviceLocalUsers.length > 0 && (
         <>
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Учётные записи ПК</Text>
+          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Local PC Accounts</Text>
           <View style={styles.usersCard}>
             {deviceLocalUsers.map((u) => (
               <LocalUserRow key={u.id} user={u} />
@@ -332,8 +330,8 @@ export default function ControlScreen({ route }: Props) {
         </>
       )}
 
-      {/* Бонусное время */}
-      <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Расписание</Text>
+      {/* Bonus Time */}
+      <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Schedule</Text>
       <View style={styles.bonusRow}>
         {[15, 30, 60].map((min) => (
           <TouchableOpacity
@@ -342,28 +340,28 @@ export default function ControlScreen({ route }: Props) {
             onPress={() => void addBonusTime(min)}
           >
             <Text style={styles.bonusEmoji}>⏱</Text>
-            <Text style={styles.bonusLabel}>+{min} мин</Text>
+            <Text style={styles.bonusLabel}>+{min} min</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Настройки расписания */}
+      {/* Schedule Settings */}
       <TouchableOpacity
         style={[styles.scheduleBtn, { marginTop: 8 }]}
         onPress={() => navigation.navigate('Schedule', { deviceId, deviceName })}
       >
         <Text style={styles.scheduleEmoji}>🕐</Text>
-        <Text style={styles.scheduleBtnText}>Расписание работы</Text>
+        <Text style={styles.scheduleBtnText}>Schedule Settings</Text>
         <Text style={styles.scheduleArrow}>›</Text>
       </TouchableOpacity>
 
-      {/* Модалка скриншота */}
+      {/* Screenshot Modal */}
       <Modal visible={screenshotModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { padding: 0, overflow: 'hidden' }]}>
             {screenshotLoading ? (
               <View style={{ padding: 32, alignItems: 'center' }}>
-                <Text style={{ color: '#fff', fontSize: 16 }}>Захват скриншота...</Text>
+                <Text style={{ color: '#fff', fontSize: 16 }}>Capturing screenshot...</Text>
               </View>
             ) : screenshotData ? (
               <Image
@@ -382,25 +380,25 @@ export default function ControlScreen({ route }: Props) {
                 setScreenshotModal(false)
               }}
             >
-              <Text style={{ color: '#888' }}>Закрыть</Text>
+              <Text style={{ color: '#888' }}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* Модалка задержки */}
+      {/* Delay Modal */}
       <Modal visible={delayModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>
-              Задержка для {pendingCommand}
+              Delay for {pendingCommand}
             </Text>
             <TextInput
               style={styles.modalInput}
               value={delaySeconds}
               onChangeText={setDelaySeconds}
               keyboardType="number-pad"
-              placeholder="Секунды"
+              placeholder="Seconds"
               placeholderTextColor="#666"
             />
             <View style={styles.modalButtons}>
@@ -408,7 +406,7 @@ export default function ControlScreen({ route }: Props) {
                 style={styles.modalCancel}
                 onPress={() => setDelayModal(false)}
               >
-                <Text style={{ color: '#888' }}>Отмена</Text>
+                <Text style={{ color: '#888' }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalConfirm}
@@ -422,12 +420,16 @@ export default function ControlScreen({ route }: Props) {
                   }
                 }}
               >
-                <Text style={{ color: '#fff' }}>Выполнить</Text>
+                <Text style={{ color: '#fff' }}>Execute</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+    </ScrollView>
+  )
+}
+
     </ScrollView>
   )
 }

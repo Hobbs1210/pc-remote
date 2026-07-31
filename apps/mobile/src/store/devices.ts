@@ -63,8 +63,9 @@ export const useDevicesStore = create<DevicesState>((set) => ({
       const { data } = await api.get<Device[]>('/devices')
       set({ devices: data, isLoading: false })
     } catch {
-      set({ error: 'Не удалось загрузить устройства', isLoading: false })
+      set({ error: 'Failed to load devices', isLoading: false })
     }
+
   },
 
   fetchLocalUsers: async (deviceId) => {

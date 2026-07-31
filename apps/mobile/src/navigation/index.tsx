@@ -37,7 +37,7 @@ function SettingsScreen() {
     setSaving(true)
     try {
       await setServerUrl(trimmed)
-      Alert.alert('Готово', 'Сервер обновлён. Выйдите и войдите снова.')
+      Alert.alert('Success', 'Server URL updated. Please log in again.')
     } finally {
       setSaving(false)
     }
@@ -46,19 +46,19 @@ function SettingsScreen() {
   const handleResetUrl = async () => {
     setUrlInput(DEFAULT_API_URL)
     await setServerUrl(DEFAULT_API_URL)
-    Alert.alert('Готово', 'Адрес сброшен на значение по умолчанию.')
+    Alert.alert('Success', 'Server URL reset to default.')
   }
 
   const handleLogout = () => {
-    Alert.alert('Выход', 'Выйти из аккаунта?', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Выйти', style: 'destructive', onPress: () => void logout() },
+    Alert.alert('Log out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log out', style: 'destructive', onPress: () => void logout() },
     ])
   }
 
   return (
     <View style={s.container}>
-      <Text style={s.label}>Адрес сервера</Text>
+      <Text style={s.label}>Server Address</Text>
       <TextInput
         style={s.input}
         value={urlInput}
@@ -71,17 +71,17 @@ function SettingsScreen() {
       />
       <View style={s.row}>
         <TouchableOpacity style={[s.btn, s.btnPrimary, s.flex1]} onPress={handleSaveUrl} disabled={saving}>
-          <Text style={s.btnPrimaryText}>{saving ? 'Сохраняем...' : 'Сохранить'}</Text>
+          <Text style={s.btnPrimaryText}>{saving ? 'Saving...' : 'Save'}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[s.btn, s.btnSecondary]} onPress={handleResetUrl}>
-          <Text style={s.btnSecondaryText}>Сброс</Text>
+          <Text style={s.btnSecondaryText}>Reset</Text>
         </TouchableOpacity>
       </View>
 
       <View style={s.spacer} />
 
       <TouchableOpacity style={[s.btn, s.btnDanger]} onPress={handleLogout}>
-        <Text style={s.btnDangerText}>Выйти из аккаунта</Text>
+        <Text style={s.btnDangerText}>Log out of account</Text>
       </TouchableOpacity>
     </View>
   )
@@ -121,7 +121,7 @@ function TabNavigator() {
         name="Devices"
         component={DevicesScreen}
         options={{
-          title: 'Устройства',
+          title: 'Devices',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>💻</Text>,
         }}
       />
@@ -129,7 +129,7 @@ function TabNavigator() {
         name="Settings"
         component={SettingsScreen}
         options={{
-          title: 'Настройки',
+          title: 'Settings',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>⚙️</Text>,
         }}
       />
@@ -175,16 +175,16 @@ export default function Navigation() {
             <Stack.Screen
               name="Scan"
               component={ScanScreen}
-              options={{ title: 'Сканировать QR' }}
+              options={{ title: 'Scan QR Code' }}
             />
             <Stack.Screen
               name="Schedule"
               component={ScheduleScreen}
-              options={({ route }) => ({ title: `Расписание — ${route.params.deviceName}` })}
+              options={({ route }) => ({ title: `Schedule — ${route.params.deviceName}` })}
             />
           </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
   )
-}
+}

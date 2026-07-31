@@ -20,12 +20,12 @@ function setLoginNotice(reason: LockReason) {
       execSync(`reg add "${WINLOGON_KEY}" /v LegalNoticeCaption /t REG_SZ /d "" /f`, { stdio: 'ignore' })
       execSync(`reg add "${WINLOGON_KEY}" /v LegalNoticeText /t REG_SZ /d "" /f`, { stdio: 'ignore' })
     } else {
-      const caption = 'PC Remote — Доступ ограничен'
+      const caption = 'PC Remote — Access Restricted'
       const text = reason === 'downtime'
-        ? 'Действует комендантский час. Доступ к ПК запрещён в данное время.'
+        ? 'Curfew is active. Access to PC is restricted at this time.'
         : reason === 'daily_limit'
-          ? 'Дневной лимит экранного времени исчерпан.'
-          : 'Доступ к ПК запрещён в данное время суток.'
+          ? 'Daily screen time limit reached.'
+          : 'Access to PC is restricted at this time of day.'
 
       execSync(`reg add "${WINLOGON_KEY}" /v LegalNoticeCaption /t REG_SZ /d "${caption}" /f`, { stdio: 'ignore' })
       execSync(`reg add "${WINLOGON_KEY}" /v LegalNoticeText /t REG_SZ /d "${text}" /f`, { stdio: 'ignore' })
@@ -44,12 +44,12 @@ function lockSession(reason: LockReason) {
   }
 
   const message = reason === 'downtime'
-    ? 'Комендантский час: выполняется выход из системы'
+    ? 'Curfew Active: logging off session'
     : reason === 'daily_limit'
-      ? 'Дневной лимит исчерпан: ПК будет заблокирован'
-      : 'Доступ запрещён в данное время: ПК будет заблокирован'
+      ? 'Daily limit reached: PC will be locked'
+      : 'Access restricted: PC will be locked'
 
-  // downtime → полный выход (logoff), остальные → блокировка экрана
+  // downtime → full logoff, others → screen lock
   const logoff = reason === 'downtime'
   setPendingLock(message, logoff)
 }
@@ -67,32 +67,33 @@ export function startEnforcer() {
   const check = () => {
     const schedule = getSchedule()
 
-    // Если дневной лимит включён и есть активная сессия — считаем время
+    // If daily limit enabled and session active — track usage time
     if (schedule?.dailyLimit?.enabled && hasActiveSession()) {
       incrementUsage(schedule.timezone)
     }
 
-    // Проверяем причину блокировки
+    // Check lock reason
     const reason = getLockReason()
 
-    // Обновляем Legal Notice на экране входа
+    // Update Legal Notice on Windows login screen
     setLoginNotice(reason)
 
     if (reason !== null) {
       lockSession(reason)
-      return  // после lock не обновляем уведомление таймера
+      return
     }
 
-    // Уведомление: осталось мало времени (5 и 1 минута)
+    // Notifications: remaining screen time warnings (5 and 1 minute)
     const remaining = getMinutesRemainingToday()
     if (remaining === 5) {
-      setPendingNotification('Осталось 5 минут экранного времени')
+      setPendingNotification('5 minutes of screen time remaining')
       logger.warn({ remaining }, 'Daily limit: 5 min remaining')
     } else if (remaining === 1) {
-      setPendingNotification('Осталась 1 минута экранного времени')
+      setPendingNotification('1 minute of screen time remaining')
       logger.warn({ remaining }, 'Daily limit: 1 min remaining')
     }
   }
+
 
   // Проверяем сразу при старте (защита после перезагрузки)
   check()

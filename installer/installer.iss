@@ -24,7 +24,7 @@ CloseApplications=yes
 CloseApplicationsFilter=*agent.exe*
 
 [Languages]
-Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 Source: "winsw\winsw.exe"; DestDir: "{app}"; DestName: "agent-svc.exe"; \
@@ -35,14 +35,14 @@ Source: "tray-launcher.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "set-password.ps1"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\Запустить трей PC Remote"; \
+Name: "{group}\Launch PC Remote Tray"; \
   Filename: "{app}\tray-launcher.vbs"; \
   IconFilename: "{app}\{#MyAppExeName}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 
 [Registry]
-; Автозапуск трея при входе пользователя
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
+; Auto-start tray on user login
+Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
   ValueType: string; ValueName: "PC Remote Tray"; \
   ValueData: "wscript.exe ""{app}\tray-launcher.vbs"""; \
   Flags: uninsdeletevalue
@@ -51,62 +51,61 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
 Name: "{commonappdata}\pc-remote-agent"; Permissions: system-full administrators-full
 
 [Run]
-; Создаём и ограничиваем права на ProgramData\pc-remote-agent (только SYSTEM и Администраторы)
+; Create and restrict permissions on ProgramData\pc-remote-agent (SYSTEM and Administrators only)
 Filename: "icacls.exe"; \
   Parameters: """{commonappdata}\pc-remote-agent"" /inheritance:r /grant:r ""*S-1-5-18:(OI)(CI)F"" ""*S-1-5-32-544:(OI)(CI)F"""; \
   Flags: runhidden waituntilterminated
 
-; Регистрируем и запускаем сервис
+; Register and start service
 Filename: "{app}\agent-svc.exe"; Parameters: "install"; \
   Flags: runhidden waituntilterminated
 Filename: "{app}\agent-svc.exe"; Parameters: "start"; \
   Flags: runhidden waituntilterminated
 
-; Устанавливаем пароль через HTTP после старта сервиса (надёжнее чем --set-password)
+; Set password via HTTP after service startup
 Filename: "powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\set-password.ps1"" -Password ""{code:GetTrayPassword}"""; \
   Flags: runhidden waituntilterminated
 
-; Права на службу: SYSTEM и администраторы имеют полный контроль (для корректной переустановки).
-; Обычные пользователи (AU) — только чтение статуса.
+; Service permissions: SYSTEM and Administrators full control, authenticated users read status
 Filename: "sc.exe"; \
   Parameters: "sdset {#MyServiceName} D:(A;;CCLCSWRPWPDTLOCRRCSDWDWO;;;SY)(A;;CCLCSWRPWPDTLOCRRCSDWDWO;;;BA)(A;;CCLCLOCRRC;;;AU)"; \
   Flags: runhidden waituntilterminated
 
-; Запускаем трей сразу после установки
+; Launch tray after installation
 Filename: "wscript.exe"; \
   Parameters: """{app}\tray-launcher.vbs"""; \
-  Description: "Запустить системный трей PC Remote"; \
+  Description: "Launch PC Remote System Tray"; \
   Flags: runhidden nowait postinstall
 
 [UninstallRun]
-; 0. Удаляем исключение Windows Defender
+; 0. Remove Windows Defender exclusion
 Filename: "powershell.exe"; \
   Parameters: "-NoProfile -WindowStyle Hidden -Command ""Remove-MpPreference -ExclusionPath '{app}' -ErrorAction SilentlyContinue"""; \
   Flags: runhidden waituntilterminated
 
-; 1. Убиваем процесс трея (powershell, запускающий tray.ps1)
+; 1. Stop tray PowerShell process
 Filename: "powershell.exe"; \
   Parameters: "-NoProfile -WindowStyle Hidden -Command ""Get-CimInstance Win32_Process | Where-Object {{$_.Name -eq 'powershell.exe' -and $_.CommandLine -like '*tray.ps1*'} | ForEach-Object {{Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}"""; \
   Flags: runhidden waituntilterminated
 
-; 2. Убиваем agent.exe если запущен вне сервиса
+; 2. Stop agent.exe if running outside service
 Filename: "taskkill.exe"; Parameters: "/F /IM {#MyAppExeName}"; \
   Flags: runhidden waituntilterminated
 
-; 3. Сбрасываем DACL перед удалением — иначе sc delete/uninstall может упасть из-за старых ограниченных прав
+; 3. Reset DACL before uninstall
 Filename: "powershell.exe"; \
   Parameters: "-NoProfile -WindowStyle Hidden -Command ""Remove-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\{#MyServiceName}' -Name Security -Force -ErrorAction SilentlyContinue"""; \
   Flags: runhidden waituntilterminated
 
-; 4. Останавливаем и удаляем сервис
+; 4. Stop and uninstall service
 Filename: "{app}\agent-svc.exe"; Parameters: "stop"; \
   Flags: runhidden waituntilterminated
 Filename: "{app}\agent-svc.exe"; Parameters: "uninstall"; \
   Flags: runhidden waituntilterminated
 
 [UninstallDelete]
-; Удаляем конфиг, токены и логи агента из ProgramData
+; Delete config, tokens, and logs from ProgramData
 Type: filesandordirs; Name: "{commonappdata}\pc-remote-agent"
 
 [Code]
@@ -115,7 +114,7 @@ var
   PasswordPage: TInputQueryWizardPage;
 
 { ------------------------------------------------------------------ }
-{ Проверка — существует ли сервис                                      }
+{ Check if service exists                                            }
 { ------------------------------------------------------------------ }
 function ServiceExists: Boolean;
 var
@@ -127,7 +126,7 @@ begin
 end;
 
 { ------------------------------------------------------------------ }
-{ Убить трей и агент, остановить сервис перед копированием файлов     }
+{ Stop processes and service prior to copying files                 }
 { ------------------------------------------------------------------ }
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
@@ -136,61 +135,48 @@ var
 begin
   Result := '';
 
-  // Убиваем tray.ps1 powershell процесс
   Exec('powershell.exe',
     '-NoProfile -WindowStyle Hidden -Command "Get-CimInstance Win32_Process | Where-Object {$_.Name -eq ''powershell.exe'' -and $_.CommandLine -like ''*tray.ps1*''} | ForEach-Object {Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}"',
     '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 
-  // Убиваем agent.exe
   Exec('taskkill.exe', '/F /IM {#MyAppExeName}',
     '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 
-  // Добавляем исключение Defender ДО копирования файлов —
-  // иначе AV успевает просканировать и заблокировать agent.exe при копировании
   Exec('powershell.exe',
     '-NoProfile -WindowStyle Hidden -Command "Add-MpPreference' +
     ' -ExclusionPath ''' + ExpandConstant('{app}') + '''' +
     ' -ErrorAction SilentlyContinue"',
     '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 
-  // Останавливаем и удаляем сервис
   if ServiceExists then begin
     Exec('sc.exe', 'stop {#MyServiceName}',
       '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Sleep(2000);
 
-    // Сбрасываем DACL: удаляем Security value из реестра — после этого
-    // SCM использует дефолтные права, и sc delete/uninstall сработают
     Exec('powershell.exe',
       '-NoProfile -WindowStyle Hidden -Command "Remove-ItemProperty' +
       ' -Path ''HKLM:\SYSTEM\CurrentControlSet\Services\{#MyServiceName}''' +
       ' -Name Security -Force -ErrorAction SilentlyContinue"',
       '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 
-    // WinSW uninstall
     if FileExists(ExpandConstant('{app}\agent-svc.exe')) then
       Exec(ExpandConstant('{app}\agent-svc.exe'), 'uninstall',
         '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 
-    // sc delete как fallback
     Exec('sc.exe', 'delete {#MyServiceName}',
       '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 
-    // WMI delete — работает когда sc delete не справляется
     Exec('powershell.exe',
       '-NoProfile -WindowStyle Hidden -Command' +
       ' "Get-WmiObject Win32_Service | Where-Object Name -eq ''{#MyServiceName}'' | ForEach-Object { $_.Delete() }"',
       '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 
-    // Удаляем ключ реестра напрямую
     Exec('powershell.exe',
       '-NoProfile -WindowStyle Hidden -Command "Remove-Item' +
       ' ''HKLM:\SYSTEM\CurrentControlSet\Services\{#MyServiceName}''' +
       ' -Recurse -Force -ErrorAction SilentlyContinue"',
       '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 
-    // Ждём пока SCM полностью освободит запись о сервисе (до 5 сек)
-    // sc query возвращает 1060 когда сервис исчез из SCM
     for I := 0 to 10 do begin
       Sleep(500);
       Exec('sc.exe', 'query {#MyServiceName}',
@@ -198,8 +184,6 @@ begin
       if ResultCode <> 0 then break;
     end;
 
-    // Если сервис всё ещё в SCM — DACL блокирует обычный sc delete.
-    // Запускаем sdset+delete от имени SYSTEM через schtasks (SYSTEM обходит любой DACL)
     Exec('sc.exe', 'query {#MyServiceName}',
       '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     if ResultCode = 0 then begin
@@ -214,7 +198,6 @@ begin
       Sleep(4000);
       Exec('schtasks.exe', '/Delete /TN "PCRCleanup" /F',
         '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-      // Финальное ожидание
       for I := 0 to 20 do begin
         Sleep(500);
         Exec('sc.exe', 'query {#MyServiceName}',
@@ -226,7 +209,7 @@ begin
 end;
 
 { ------------------------------------------------------------------ }
-{ Проверка наличия текущей установки при запуске инсталлера           }
+{ Check existing installation                                        }
 { ------------------------------------------------------------------ }
 function InitializeSetup: Boolean;
 var
@@ -237,16 +220,16 @@ begin
     '{#MyAppId}' + '}_is1';
   if RegKeyExists(HKLM, UninstallKey) then begin
     if MsgBox(
-      'PC Remote Agent уже установлен на этом компьютере.' + #13#10 + #13#10 +
-      'Продолжить? Старая версия будет остановлена и заменена.' + #13#10 +
-      'Конфигурация и привязка устройства сохранятся.',
+      'PC Remote Agent is already installed on this computer.' + #13#10 + #13#10 +
+      'Continue? The old version will be stopped and replaced.' + #13#10 +
+      'Existing configuration and device pairing will be preserved.',
       mbConfirmation, MB_YESNO) = IDNO then
       Result := False;
   end;
 end;
 
 { ------------------------------------------------------------------ }
-{ Создать конфиг WinSW                                                }
+{ Create WinSW Config                                                }
 { ------------------------------------------------------------------ }
 procedure CreateWinSWConfig;
 var
@@ -287,21 +270,21 @@ begin
 end;
 
 { ------------------------------------------------------------------ }
-{ Страницы мастера установки                                          }
+{ Setup Wizard Pages                                                 }
 { ------------------------------------------------------------------ }
 procedure InitializeWizard;
 begin
   ServerUrlPage := CreateInputQueryPage(wpSelectDir,
-    'Настройка подключения', 'Укажите адрес сервера PC Remote',
-    'URL сервера (Render, ngrok или другой).');
-  ServerUrlPage.Add('URL сервера:', False);
+    'Connection Setup', 'Specify PC Remote server address',
+    'Server URL (Render, ngrok, or custom domain).');
+  ServerUrlPage.Add('Server URL:', False);
   ServerUrlPage.Values[0] := 'https://pc-remote-backend.onrender.com';
 
   PasswordPage := CreateInputQueryPage(ServerUrlPage.ID,
-    'Защита трея', 'Установите пароль для доступа к меню трея',
-    'Этот пароль будет запрошен при любом действии: показать QR, сбросить привязку и др.');
-  PasswordPage.Add('Пароль:', True);
-  PasswordPage.Add('Повторите пароль:', True);
+    'Tray Security', 'Set a password to protect tray menu actions',
+    'This password will be required for tray actions (show QR, reset binding, etc).');
+  PasswordPage.Add('Password:', True);
+  PasswordPage.Add('Confirm Password:', True);
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
@@ -310,18 +293,19 @@ begin
 
   if CurPageID = ServerUrlPage.ID then begin
     if Trim(ServerUrlPage.Values[0]) = '' then begin
-      MsgBox('Пожалуйста, введите URL сервера.', mbError, MB_OK);
+      MsgBox('Please enter a Server URL.', mbError, MB_OK);
       Result := False;
     end;
   end;
 
   if CurPageID = PasswordPage.ID then begin
     if Trim(PasswordPage.Values[0]) = '' then begin
-      MsgBox('Пароль не может быть пустым.', mbError, MB_OK);
+      MsgBox('Password cannot be empty.', mbError, MB_OK);
       Result := False;
     end else if PasswordPage.Values[0] <> PasswordPage.Values[1] then begin
-      MsgBox('Пароли не совпадают.', mbError, MB_OK);
+      MsgBox('Passwords do not match.', mbError, MB_OK);
       Result := False;
     end;
   end;
 end;
+

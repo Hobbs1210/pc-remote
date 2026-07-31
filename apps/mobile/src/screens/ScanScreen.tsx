@@ -27,7 +27,7 @@ export default function ScanScreen() {
       setPendingData(parsed)
       setNameModal(true)
     } catch {
-      Alert.alert('Ошибка', 'Неверный QR-код', [
+      Alert.alert('Error', 'Invalid QR code', [
         { text: 'OK', onPress: () => setScanned(false) },
       ])
     }
@@ -38,11 +38,11 @@ export default function ScanScreen() {
 
     try {
       await bindDevice(pendingData.deviceId, pendingData.secret, deviceName.trim())
-      Alert.alert('✓ Устройство привязано', deviceName, [
+      Alert.alert('✓ Device Paired', deviceName, [
         { text: 'OK', onPress: () => navigation.goBack() },
       ])
     } catch {
-      Alert.alert('Ошибка', 'Не удалось привязать устройство')
+      Alert.alert('Error', 'Failed to pair device')
       setScanned(false)
       setNameModal(false)
     }
@@ -51,9 +51,9 @@ export default function ScanScreen() {
   if (!permission?.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.text}>Нужен доступ к камере</Text>
+        <Text style={styles.text}>Camera access required</Text>
         <TouchableOpacity style={styles.button} onPress={requestPermission}>
-          <Text style={styles.buttonText}>Разрешить</Text>
+          <Text style={styles.buttonText}>Grant Access</Text>
         </TouchableOpacity>
       </View>
     )
@@ -69,23 +69,23 @@ export default function ScanScreen() {
 
       <View style={styles.overlay}>
         <View style={styles.scanFrame} />
-        <Text style={styles.hint}>Наведите камеру на QR-код агента</Text>
+        <Text style={styles.hint}>Point camera at the PC agent QR code</Text>
       </View>
 
       {nameModal && (
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Название устройства</Text>
+            <Text style={styles.modalTitle}>Device Name</Text>
             <TextInput
               style={styles.input}
               value={deviceName}
               onChangeText={setDeviceName}
-              placeholder="Например: Мой ПК"
+              placeholder="e.g. My PC"
               placeholderTextColor="#666"
               autoFocus
             />
             <TouchableOpacity style={styles.button} onPress={handleBind}>
-              <Text style={styles.buttonText}>Привязать</Text>
+              <Text style={styles.buttonText}>Pair Device</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -93,6 +93,7 @@ export default function ScanScreen() {
     </View>
   )
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f0f23', justifyContent: 'center', alignItems: 'center' },

@@ -22,7 +22,7 @@ export default function LoginScreen() {
 
   const handleSubmit = async () => {
     if (!email || !password) {
-      Alert.alert('Ошибка', 'Заполните все поля')
+      Alert.alert('Error', 'Please fill in all fields')
       return
     }
 
@@ -35,10 +35,10 @@ export default function LoginScreen() {
       }
     } catch {
       Alert.alert(
-        'Ошибка',
+        'Error',
         isRegister
-          ? 'Не удалось зарегистрироваться'
-          : 'Неверный email или пароль'
+          ? 'Registration failed'
+          : 'Invalid email or password'
       )
     } finally {
       setLoading(false)
@@ -53,7 +53,7 @@ export default function LoginScreen() {
       <View style={styles.inner}>
         <Text style={styles.title}>PC Remote</Text>
         <Text style={styles.subtitle}>
-          {isRegister ? 'Создать аккаунт' : 'Войти'}
+          {isRegister ? 'Create an Account' : 'Sign In'}
         </Text>
 
         <TextInput
@@ -69,7 +69,7 @@ export default function LoginScreen() {
         <View style={styles.passwordRow}>
           <TextInput
             style={styles.passwordInput}
-            placeholder="Пароль"
+            placeholder="Password"
             placeholderTextColor="#666"
             value={password}
             onChangeText={setPassword}
@@ -92,7 +92,7 @@ export default function LoginScreen() {
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.buttonText}>
-              {isRegister ? 'Зарегистрироваться' : 'Войти'}
+              {isRegister ? 'Sign Up' : 'Sign In'}
             </Text>
           )}
         </TouchableOpacity>
@@ -100,14 +100,15 @@ export default function LoginScreen() {
         <TouchableOpacity onPress={() => setIsRegister(!isRegister)}>
           <Text style={styles.toggle}>
             {isRegister
-              ? 'Уже есть аккаунт? Войти'
-              : 'Нет аккаунта? Зарегистрироваться'}
+              ? 'Already have an account? Sign In'
+              : "Don't have an account? Sign Up"}
           </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   )
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f0f23' },

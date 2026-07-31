@@ -37,25 +37,25 @@ export default function DevicesScreen() {
   const handleLongPress = useCallback((item: typeof devices[0]) => {
     Alert.alert(
       item.name,
-      'Выберите действие',
+      'Select action',
       [
         {
-          text: 'Удалить устройство',
+          text: 'Delete device',
           style: 'destructive',
           onPress: () => Alert.alert(
-            'Удалить устройство?',
-            `«${item.name}» будет отвязан.\n\nАгент на ПК сбросится и покажет новый QR-код для повторной привязки.`,
+            'Delete device?',
+            `"${item.name}" will be unlinked.\n\nThe PC agent will reset and show a new QR code for re-pairing.`,
             [
-              { text: 'Отмена', style: 'cancel' },
+              { text: 'Cancel', style: 'cancel' },
               {
-                text: 'Удалить',
+                text: 'Delete',
                 style: 'destructive',
                 onPress: () => void deleteDevice(item.id),
               },
             ]
           ),
         },
-        { text: 'Отмена', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
       ]
     )
   }, [deleteDevice])
@@ -120,14 +120,15 @@ export default function DevicesScreen() {
           }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyText}>Нет привязанных устройств</Text>
+              <Text style={styles.emptyText}>No paired devices</Text>
               <Text style={styles.emptyHint}>
-                Нажмите + чтобы привязать ПК
+                Tap + to pair a new PC
               </Text>
             </View>
           }
         />
       )}
+
 
       <TouchableOpacity
         style={styles.fab}

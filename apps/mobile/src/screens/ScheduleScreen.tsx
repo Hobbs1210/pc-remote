@@ -31,13 +31,13 @@ interface DeviceSchedule {
 }
 
 const DAYS = [
-  { key: '1', label: 'Понедельник' },
-  { key: '2', label: 'Вторник' },
-  { key: '3', label: 'Среда' },
-  { key: '4', label: 'Четверг' },
-  { key: '5', label: 'Пятница' },
-  { key: '6', label: 'Суббота' },
-  { key: '0', label: 'Воскресенье' },
+  { key: '1', label: 'Monday' },
+  { key: '2', label: 'Tuesday' },
+  { key: '3', label: 'Wednesday' },
+  { key: '4', label: 'Thursday' },
+  { key: '5', label: 'Friday' },
+  { key: '6', label: 'Saturday' },
+  { key: '0', label: 'Sunday' },
 ]
 
 const TIME_RE = /^\d{2}:\d{2}$/
@@ -51,9 +51,9 @@ function formatTime(raw: string): string {
 function minutesToLabel(minutes: number): string {
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
-  if (h === 0) return `${m} мин`
-  if (m === 0) return `${h} ч`
-  return `${h} ч ${m} мин`
+  if (h === 0) return `${m} min`
+  if (m === 0) return `${h} h`
+  return `${h} h ${m} min`
 }
 
 export default function ScheduleScreen({ route }: Props) {
@@ -63,17 +63,17 @@ export default function ScheduleScreen({ route }: Props) {
   const [saving, setSaving] = useState(false)
   const [timezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
 
-  // Разрешённые часы
+  // Allowed hours
   const [enabled, setEnabled] = useState(false)
   const [days, setDays] = useState<DaySlots>({})
   const [addForm, setAddForm] = useState<Record<string, { start: string; end: string } | undefined>>({})
 
-  // Комендантский час
+  // Curfew / Quiet Hours
   const [downtimeEnabled, setDowntimeEnabled] = useState(false)
   const [downtimeStart, setDowntimeStart] = useState('23:00')
   const [downtimeEnd, setDowntimeEnd] = useState('07:00')
 
-  // Дневной лимит
+  // Daily limit
   const [limitEnabled, setLimitEnabled] = useState(false)
   const [minutesWeekday, setMinutesWeekday] = useState('120')
   const [minutesWeekend, setMinutesWeekend] = useState('240')
@@ -99,7 +99,7 @@ export default function ScheduleScreen({ route }: Props) {
         }
       }
     } catch {
-      Alert.alert('Ошибка', 'Не удалось загрузить расписание')
+      Alert.alert('Error', 'Failed to load schedule')
     } finally {
       setLoading(false)
     }
@@ -107,13 +107,13 @@ export default function ScheduleScreen({ route }: Props) {
 
   async function save() {
     if (!TIME_RE.test(downtimeStart) || !TIME_RE.test(downtimeEnd)) {
-      Alert.alert('Ошибка', 'Неверный формат времени комендантского часа (ЧЧ:ММ)')
+      Alert.alert('Error', 'Invalid time format for curfew (HH:MM)')
       return
     }
     const wd = parseInt(minutesWeekday)
     const we = parseInt(minutesWeekend)
     if (isNaN(wd) || wd < 1 || isNaN(we) || we < 1) {
-      Alert.alert('Ошибка', 'Введите корректный лимит в минутах (минимум 1)')
+      Alert.alert('Error', 'Enter a valid limit in minutes (minimum 1)')
       return
     }
 
@@ -126,9 +126,9 @@ export default function ScheduleScreen({ route }: Props) {
         downtime: { enabled: downtimeEnabled, start: downtimeStart, end: downtimeEnd },
         dailyLimit: { enabled: limitEnabled, minutesWeekday: wd, minutesWeekend: we },
       })
-      Alert.alert('Сохранено', 'Расписание обновлено')
+      Alert.alert('Saved', 'Schedule updated successfully')
     } catch {
-      Alert.alert('Ошибка', 'Не удалось сохранить расписание')
+      Alert.alert('Error', 'Failed to save schedule')
     } finally {
       setSaving(false)
     }
@@ -145,12 +145,12 @@ export default function ScheduleScreen({ route }: Props) {
     const form = addForm[key]
     if (!form) return
     if (!TIME_RE.test(form.start) || !TIME_RE.test(form.end)) {
-      Alert.alert('Неверный формат', 'Введите время в формате ЧЧ:ММ'); return
+      Alert.alert('Invalid Format', 'Enter time in HH:MM format'); return
     }
     const [sh = 0, sm = 0] = form.start.split(':').map(Number)
     const [eh = 0, em = 0] = form.end.split(':').map(Number)
     if (sh * 60 + sm >= eh * 60 + em) {
-      Alert.alert('Ошибка', 'Начало должно быть раньше окончания'); return
+      Alert.alert('Error', 'Start time must be earlier than end time'); return
     }
     setDays((prev) => ({ ...prev, [key]: [...(prev[key] ?? []), { start: form.start, end: form.end }] }))
     cancelAddForm(key)
@@ -166,13 +166,13 @@ export default function ScheduleScreen({ route }: Props) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
-      {/* ── 1. Комендантский час ── */}
-      <Text style={styles.sectionTitle}>Нерабочие часы</Text>
+      {/* ── 1. Curfew / Quiet Hours ── */}
+      <Text style={styles.sectionTitle}>Quiet Hours</Text>
       <View style={styles.card}>
         <View style={styles.toggleRow}>
           <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={styles.cardTitle}>Комендантский час</Text>
-            <Text style={styles.cardSub}>ПК полностью недоступен в этот период</Text>
+            <Text style={styles.cardTitle}>Curfew Hours</Text>
+            <Text style={styles.cardSub}>PC is completely unavailable during this period</Text>
           </View>
           <Switch value={downtimeEnabled} onValueChange={setDowntimeEnabled}
             trackColor={{ false: '#333', true: '#6c63ff' }} thumbColor="#fff" />
@@ -180,7 +180,7 @@ export default function ScheduleScreen({ route }: Props) {
         {downtimeEnabled && (
           <View style={styles.timeRow}>
             <View style={styles.timeField}>
-              <Text style={styles.timeLabel}>С</Text>
+              <Text style={styles.timeLabel}>From</Text>
               <TextInput style={styles.timeInput} value={downtimeStart}
                 onChangeText={(v) => setDowntimeStart(formatTime(v))}
                 placeholder="23:00" placeholderTextColor="#555"
@@ -188,7 +188,7 @@ export default function ScheduleScreen({ route }: Props) {
             </View>
             <Text style={styles.timeSep}>—</Text>
             <View style={styles.timeField}>
-              <Text style={styles.timeLabel}>До</Text>
+              <Text style={styles.timeLabel}>To</Text>
               <TextInput style={styles.timeInput} value={downtimeEnd}
                 onChangeText={(v) => setDowntimeEnd(formatTime(v))}
                 placeholder="07:00" placeholderTextColor="#555"
@@ -198,16 +198,16 @@ export default function ScheduleScreen({ route }: Props) {
         )}
       </View>
 
-      {/* ── 2. Дневной лимит ── */}
-      <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Дневной лимит</Text>
+      {/* ── 2. Daily Limit ── */}
+      <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Daily Limit</Text>
       <View style={styles.card}>
         <View style={styles.toggleRow}>
           <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={styles.cardTitle}>Лимит экранного времени</Text>
+            <Text style={styles.cardTitle}>Screen Time Limit</Text>
             <Text style={styles.cardSub}>
               {limitEnabled
-                ? `Будни: ${minutesToLabel(parseInt(minutesWeekday) || 0)} · Вых: ${minutesToLabel(parseInt(minutesWeekend) || 0)}`
-                : 'Время не ограничено'}
+                ? `Weekdays: ${minutesToLabel(parseInt(minutesWeekday) || 0)} · Weekends: ${minutesToLabel(parseInt(minutesWeekend) || 0)}`
+                : 'Unlimited time'}
             </Text>
           </View>
           <Switch value={limitEnabled} onValueChange={setLimitEnabled}
@@ -216,35 +216,35 @@ export default function ScheduleScreen({ route }: Props) {
         {limitEnabled && (
           <View style={{ marginTop: 12, gap: 10 }}>
             <View style={styles.limitRow}>
-              <Text style={styles.limitLabel}>Будни (пн–пт)</Text>
+              <Text style={styles.limitLabel}>Weekdays (Mon–Fri)</Text>
               <View style={styles.limitInputWrap}>
                 <TextInput style={styles.limitInput} value={minutesWeekday}
                   onChangeText={setMinutesWeekday} keyboardType="number-pad"
                   placeholder="120" placeholderTextColor="#555" />
-                <Text style={styles.limitUnit}>мин</Text>
+                <Text style={styles.limitUnit}>min</Text>
               </View>
             </View>
             <View style={styles.limitRow}>
-              <Text style={styles.limitLabel}>Выходные (сб–вс)</Text>
+              <Text style={styles.limitLabel}>Weekends (Sat–Sun)</Text>
               <View style={styles.limitInputWrap}>
                 <TextInput style={styles.limitInput} value={minutesWeekend}
                   onChangeText={setMinutesWeekend} keyboardType="number-pad"
                   placeholder="240" placeholderTextColor="#555" />
-                <Text style={styles.limitUnit}>мин</Text>
+                <Text style={styles.limitUnit}>min</Text>
               </View>
             </View>
           </View>
         )}
       </View>
 
-      {/* ── 3. Разрешённые часы ── */}
-      <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Разрешённые часы</Text>
+      {/* ── 3. Allowed Hours ── */}
+      <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Allowed Hours</Text>
       <View style={styles.card}>
         <View style={styles.toggleRow}>
           <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={styles.cardTitle}>Ограничение по времени</Text>
+            <Text style={styles.cardTitle}>Time Restrictions</Text>
             <Text style={styles.cardSub}>
-              {enabled ? 'ПК доступен только в указанные часы' : 'ПК доступен в любое время'}
+              {enabled ? 'PC is available only during specified hours' : 'PC is available anytime'}
             </Text>
           </View>
           <Switch value={enabled} onValueChange={setEnabled}
@@ -259,7 +259,7 @@ export default function ScheduleScreen({ route }: Props) {
           <View key={key} style={styles.card}>
             <Text style={styles.dayLabel}>{label}</Text>
             {slots.length === 0 && !form && (
-              <Text style={styles.noSlots}>День заблокирован</Text>
+              <Text style={styles.noSlots}>Day blocked</Text>
             )}
             {slots.map((slot, i) => (
               <View key={i} style={styles.slotRow}>
@@ -291,7 +291,7 @@ export default function ScheduleScreen({ route }: Props) {
               </View>
             ) : (
               <TouchableOpacity style={styles.addBtn} onPress={() => openAddForm(key)}>
-                <Text style={styles.addBtnText}>+ Добавить интервал</Text>
+                <Text style={styles.addBtnText}>+ Add Interval</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -300,11 +300,12 @@ export default function ScheduleScreen({ route }: Props) {
 
       <TouchableOpacity style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
         onPress={() => void save()} disabled={saving}>
-        <Text style={styles.saveBtnText}>{saving ? 'Сохранение...' : 'Сохранить'}</Text>
+        <Text style={styles.saveBtnText}>{saving ? 'Saving...' : 'Save Schedule'}</Text>
       </TouchableOpacity>
     </ScrollView>
   )
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f0f23' },
