@@ -299,6 +299,7 @@ export function killProcess(pid: number): boolean {
 
 export async function getSystemInfo(): Promise<SystemInfo> {
   const [cpuPercent] = await Promise.all([getCpuPercent()])
+  const macAddress = getMacAddress()
 
   return {
     cpuPercent,
@@ -308,6 +309,6 @@ export async function getSystemInfo(): Promise<SystemInfo> {
     platform: process.platform,
     disks: getDiskInfo(),
     topProcesses: getTopProcesses(),
-    macAddress: getMacAddress(),
+    ...(macAddress !== undefined && { macAddress }),
   }
 }
