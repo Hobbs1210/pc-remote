@@ -235,6 +235,11 @@ export interface ProcessInfo {
   memMb?: number
 }
 
+export interface ActiveWindow {
+  title: string
+  processName: string
+}
+
 export interface SystemInfo {
   cpuPercent: number
   ramPercent: number
@@ -243,8 +248,12 @@ export interface SystemInfo {
   platform: string
   disks: DiskInfo[]
   topProcesses: ProcessInfo[]
-  macAddress?: string
+  macAddress?: string | undefined
+  activeWindow?: ActiveWindow | undefined
+  volume?: { level: number; muted: boolean } | undefined
 }
+
+
 
 export function getMacAddress(): string | undefined {
   const interfaces = os.networkInterfaces()
@@ -381,6 +390,8 @@ export function killProcessByName(name: string): boolean {
 export async function getSystemInfo(): Promise<SystemInfo> {
   const [cpuPercent] = await Promise.all([getCpuPercent()])
   const macAddress = getMacAddress()
+  const activeWindow = getActiveWindow()
+  const volume = getVolume()
 
   return {
     cpuPercent,
@@ -391,7 +402,7 @@ export async function getSystemInfo(): Promise<SystemInfo> {
     disks: getDiskInfo(),
     topProcesses: getTopProcesses(),
     ...(macAddress !== undefined && { macAddress }),
-    activeWindow: getActiveWindow(),
-    volume: getVolume(),
+    ...(activeWindow !== undefined && { activeWindow }),
+    ...(volume !== undefined && { volume }),
   }
-}
+}
