@@ -15,6 +15,7 @@ export const CommandTypeSchema = z.enum([
   'EXEC_TERMINAL',
   'SET_VOLUME',
   'UPDATE_AGENT',
+  'GET_INSTALLED_APPS',
 ])
 
 export type CommandType = z.infer<typeof CommandTypeSchema>

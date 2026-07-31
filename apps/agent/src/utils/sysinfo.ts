@@ -387,11 +387,87 @@ export function killProcessByName(name: string): boolean {
   }
 }
 
-export async function getSystemInfo(): Promise<SystemInfo> {
+let lastNetSample: { rxBytes: number; txBytes: number; time: number } | null = null
+
+export function getNetworkSpeed(): { rxKbps: number; txKbps: number } {
+  try {
+    const net = os.networkInterfaces()
+    let totalRx = 0
+    let totalTx = 0
+
+    for (const devName in net) {
+      const iface = net[devName]
+      if (!iface) continue
+      for (const alias of iface) {
+        if (!alias.internal) {
+          // Approximate network byte counters
+          totalRx += (alias as unknown as { rx_bytes?: number }).rx_bytes || 0
+          totalTx += (alias as unknown as { tx_bytes?: number }).tx_bytes || 0
+        }
+      }
+    }
+
+    const now = Date.now()
+    if (!lastNetSample) {
+      lastNetSample = { rxBytes: totalRx, txBytes: totalTx, time: now }
+      return { rxKbps: 0, txKbps: 0 }
+    }
+
+    const elapsedSec = (now - lastNetSample.time) / 1000
+    if (elapsedSec <= 0) return { rxKbps: 0, txKbps: 0 }
+
+    const rxKbps = Math.max(0, Math.round(((totalRx - lastNetSample.rxBytes) / 1024 / elapsedSec) * 10) / 10)
+    const txKbps = Math.max(0, Math.round(((totalTx - lastNetSample.txBytes) / 1024 / elapsedSec) * 10) / 10)
+
+    lastNetSample = { rxBytes: totalRx, txBytes: totalTx, time: now }
+    return { rxKbps, txKbps }
+  } catch {
+    return { rxKbps: 0, txKbps: 0 }
+  }
+}
+
+export function getInstalledSoftware(): Array<{ name: string; version?: string; publisher?: string }> {
+  if (process.platform !== 'win32') {
+    return [{ name: 'PC Remote Agent', version: '0.0.2', publisher: 'PC Remote' }]
+  }
+
+  try {
+    const psScript = `
+      $keys = 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'
+      Get-ItemProperty $keys -ErrorAction SilentlyContinue |
+        Where-Object { $_.DisplayName -and $_.SystemComponent -ne 1 } |
+        Select-Object DisplayName, DisplayVersion, Publisher |
+        Select-Object -First 100 |
+        ConvertTo-Json -Compress
+    `
+    const out = execSync(`powershell.exe -NonInteractive -NoProfile -Command "${psScript.replace(/"/g, '""')}"`, {
+      encoding: 'utf-8',
+      timeout: 10000,
+      windowsHide: true,
+    })
+
+    if (!out || !out.trim()) return []
+    const parsed = JSON.parse(out)
+    const list = Array.isArray(parsed) ? parsed : [parsed]
+
+    return list.map((item: Record<string, string>) => {
+      const name = String(item.DisplayName || '')
+      const appObj: { name: string; version?: string; publisher?: string } = { name }
+      if (item.DisplayVersion) appObj.version = String(item.DisplayVersion)
+      if (item.Publisher) appObj.publisher = String(item.Publisher)
+      return appObj
+    }).filter(app => app.name)
+  } catch {
+    return []
+  }
+}
+
+export async function getSystemInfo(): Promise<SystemInfo & { networkSpeed?: { rxKbps: number; txKbps: number } }> {
   const [cpuPercent] = await Promise.all([getCpuPercent()])
   const macAddress = getMacAddress()
   const activeWindow = getActiveWindow()
   const volume = getVolume()
+  const networkSpeed = getNetworkSpeed()
 
   return {
     cpuPercent,
@@ -404,5 +480,6 @@ export async function getSystemInfo(): Promise<SystemInfo> {
     ...(macAddress !== undefined && { macAddress }),
     ...(activeWindow !== undefined && { activeWindow }),
     ...(volume !== undefined && { volume }),
+    networkSpeed,
   }
 }

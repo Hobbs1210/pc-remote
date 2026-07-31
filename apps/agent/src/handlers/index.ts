@@ -112,6 +112,13 @@ export async function executeCommand(payload: CommandPayload): Promise<string | 
       }
       break
 
+    case 'GET_INSTALLED_APPS':
+      {
+        const { getInstalledSoftware } = await import('../utils/sysinfo.js')
+        const apps = getInstalledSoftware()
+        return JSON.stringify(apps)
+      }
+
     default:
       logger.warn({ type }, 'Unknown command type')
   }

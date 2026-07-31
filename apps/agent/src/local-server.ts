@@ -1,4 +1,7 @@
 import http from 'node:http'
+import path from 'node:path'
+import os from 'node:os'
+import fs from 'node:fs'
 import { log as logger } from './utils/logger.js'
 import { config, state, savePasswordHash, resetAgentConfig } from './utils/config.js'
 import bcrypt from 'bcryptjs'
@@ -113,6 +116,30 @@ export function startLocalServer() {
       } catch {
         res.writeHead(500)
         res.end('QR generation failed')
+      }
+      return
+    }
+
+    // GET /dashboard — Local Diagnostic Web View
+    if (req.method === 'GET' && (req.url === '/dashboard' || req.url === '/')) {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+      res.end(dashboardHtml())
+      return
+    }
+
+    // GET /logs — Live Agent Log File Viewer
+    if (req.method === 'GET' && req.url === '/logs') {
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' })
+      try {
+        const logPath = path.join(os.homedir(), 'AppData', 'Roaming', 'pc-remote-agent', 'logs', 'agent.log')
+        if (fs.existsSync(logPath)) {
+          const content = fs.readFileSync(logPath, 'utf-8')
+          res.end(content.slice(-50000))
+        } else {
+          res.end('Log file not found at ' + logPath)
+        }
+      } catch (e) {
+        res.end('Error reading log file: ' + String(e))
       }
       return
     }
@@ -287,5 +314,35 @@ function waitingHtml() {
 ${errDetail}
 <p style="font-size:12px;color:#888">Logs location: <code>%APPDATA%\\pc-remote-agent\\logs\\agent.log</code></p>
 <script>setTimeout(()=>location.reload(),3000)</script>
+</body></html>`
+}
+
+function dashboardHtml() {
+  const statusBadge = isOnline ? '<span style="color:#22c55e;font-weight:bold">● Online</span>' : '<span style="color:#ef4444;font-weight:bold">○ Offline</span>'
+  const boundStatus = state.agentToken ? '<span style="color:#22c55e">Paired</span>' : '<span style="color:#f59e0b">Unpaired</span>'
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>PC Remote — Local Diagnostics</title><style>${style}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:440px}
+  .card{background:#1a1a2e;padding:16px;border-radius:12px;text-align:left}
+  .card label{font-size:11px;color:#888;display:block;margin-bottom:4px;text-transform:uppercase}
+  .card val{font-size:15px;font-weight:600;color:#fff}
+  .btn{display:inline-block;background:#6c63ff;color:#fff;padding:8px 16px;border-radius:8px;text-decoration:none;font-size:13px;margin-top:12px}
+</style></head><body>
+<h2>🖥️ PC Remote Agent Diagnostics</h2>
+<div class="grid">
+  <div class="card"><label>Status</label><val>${statusBadge}</val></div>
+  <div class="card"><label>Binding</label><val>${boundStatus}</val></div>
+  <div class="card"><label>Device ID</label><val style="font-family:monospace;font-size:11px">${config.deviceId}</val></div>
+  <div class="card"><label>Target Server</label><val style="font-size:12px;word-break:break-all">${config.serverUrl || 'None'}</val></div>
+</div>
+<div class="card" style="width:100%;max-width:440px;box-sizing:border-box">
+  <label>Logs & System Info</label>
+  <val style="font-size:12px">View live logs and execution traces in real-time.</val>
+  <br/>
+  <a href="/logs" class="btn" target="_blank">📄 View Live Agent Logs</a>
+  <a href="/qr" class="btn" style="background:#22c55e">📱 Show Pairing QR Code</a>
+</div>
+<script>setTimeout(()=>location.reload(),5000)</script>
 </body></html>`
 }

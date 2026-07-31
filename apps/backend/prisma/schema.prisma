@@ -59,6 +59,9 @@ model Device {
   disks        Json     @default("[]")
   activeWindow Json     @default("{}")
   macAddress   String?
+  networkSpeed Json     @default("{}")
+  diskIo       Json     @default("{}")
+  installedApps Json    @default("[]")
 
   screenshotImage String?   // base64 JPEG
 

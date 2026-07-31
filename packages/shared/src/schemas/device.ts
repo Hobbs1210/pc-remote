@@ -39,6 +39,29 @@ export const ActiveWindowSchema = z.object({
 
 export type ActiveWindow = z.infer<typeof ActiveWindowSchema>
 
+export const NetworkSpeedSchema = z.object({
+  rxKbps: z.number().min(0),
+  txKbps: z.number().min(0),
+})
+
+export type NetworkSpeed = z.infer<typeof NetworkSpeedSchema>
+
+export const DiskIoSchema = z.object({
+  readKbps: z.number().min(0),
+  writeKbps: z.number().min(0),
+})
+
+export type DiskIo = z.infer<typeof DiskIoSchema>
+
+export const InstalledAppSchema = z.object({
+  name: z.string(),
+  version: z.string().optional(),
+  publisher: z.string().optional(),
+  installDate: z.string().optional(),
+})
+
+export type InstalledApp = z.infer<typeof InstalledAppSchema>
+
 export const HeartbeatPayloadSchema = z.object({
   deviceId: z.string().uuid(),
   timestamp: z.string().datetime(),
@@ -52,6 +75,8 @@ export const HeartbeatPayloadSchema = z.object({
   macAddress: z.string().optional(),
   activeWindow: ActiveWindowSchema.optional(),
   volume: z.object({ level: z.number().int().min(0).max(100), muted: z.boolean() }).optional(),
+  networkSpeed: NetworkSpeedSchema.optional(),
+  diskIo: DiskIoSchema.optional(),
 })
 
 

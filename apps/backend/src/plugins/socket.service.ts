@@ -58,7 +58,7 @@ export class SocketService {
   }
 
   async handleHeartbeat(deviceId: string, payload: HeartbeatPayload) {
-    const { cpuPercent, ramPercent, uptime, activeUsers, agentVersion, disks, macAddress, activeWindow } =
+    const { cpuPercent, ramPercent, uptime, activeUsers, agentVersion, disks, macAddress, activeWindow, networkSpeed, diskIo } =
       payload
 
     const today = new Date().toISOString().split('T')[0]!
@@ -77,6 +77,8 @@ export class SocketService {
         ...(disks !== undefined && { disks }),
         ...(macAddress !== undefined && { macAddress }),
         ...(activeWindow !== undefined && { activeWindow }),
+        ...(networkSpeed !== undefined && { networkSpeed }),
+        ...(diskIo !== undefined && { diskIo }),
       },
     })
 

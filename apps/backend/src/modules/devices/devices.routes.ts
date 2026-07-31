@@ -120,6 +120,19 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
     }
   })
 
+  // Get installed software inventory
+  app.get<{ Params: { id: string } }>('/:id/apps', async (request, reply) => {
+    try {
+      const device = await service.getDevice(request.user.userId, request.params.id)
+      return reply.send({ apps: device.installedApps ?? [] })
+    } catch (err) {
+      if (err instanceof DeviceError) {
+        return reply.status(err.statusCode).send({ error: err.message })
+      }
+      throw err
+    }
+  })
+
   // Trigger automatic agent update
   app.post<{ Params: { id: string }; Body: { downloadUrl?: string; version?: string } }>(
     '/:id/update',
