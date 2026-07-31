@@ -41,17 +41,13 @@ services:
       - pc-remote-net
 
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile.web
-      args:
-        SERVER_URL: ${SERVER_URL:-http://localhost:3300}
-        EXPO_PUBLIC_SERVER_URL: ${EXPO_PUBLIC_SERVER_URL:-${SERVER_URL:-http://localhost:3300}}
     image: ghcr.io/${GITHUB_REPOSITORY:-hobbs1210/pc-remote}/web:latest
     container_name: pc-remote-web
     restart: always
     ports:
       - "${WEB_PORT:-8877}:80"
+    environment:
+      SERVER_URL: ${SERVER_URL:-http://localhost:3300}
     depends_on:
       backend:
         condition: service_healthy

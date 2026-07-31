@@ -2,6 +2,12 @@ import axios from 'axios'
 import { storage } from '../utils/storage'
 
 const getEnvServerUrl = (): string | undefined => {
+  if (typeof window !== 'undefined' && (window as any).__ENV__?.SERVER_URL) {
+    const windowUrl = (window as any).__ENV__.SERVER_URL
+    if (windowUrl && windowUrl.trim() && !windowUrl.includes('__SERVER_URL__')) {
+      return windowUrl.trim().replace(/\/+$/, '')
+    }
+  }
   if (typeof process !== 'undefined' && process.env) {
     const envUrl =
       process.env.EXPO_PUBLIC_SERVER_URL ||
