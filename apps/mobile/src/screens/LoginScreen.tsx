@@ -11,6 +11,9 @@ import {
   Alert,
 } from 'react-native'
 import { useAuthStore } from '../store/auth'
+import appConfig from '../../app.json'
+
+const APP_VERSION = appConfig.expo?.version ?? '1.0.0'
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('')
@@ -104,6 +107,8 @@ export default function LoginScreen() {
               : "Don't have an account? Sign Up"}
           </Text>
         </TouchableOpacity>
+
+        <Text style={styles.versionText}>v{APP_VERSION}</Text>
       </View>
     </KeyboardAvoidingView>
   )
@@ -150,6 +155,12 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   toggle: { color: '#6c63ff', textAlign: 'center', fontSize: 14 },
+  versionText: {
+    color: '#555',
+    textAlign: 'center',
+    fontSize: 12,
+    marginTop: 32,
+  },
   passwordRow: {
     flexDirection: 'row',
     alignItems: 'center',
