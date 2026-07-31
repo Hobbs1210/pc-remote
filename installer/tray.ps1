@@ -92,13 +92,43 @@ $s = @{
 function Make-Icon {
     param([int]$R, [int]$G, [int]$B)
     $bmp = New-Object System.Drawing.Bitmap(16, 16, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
-    $icon = [System.Drawing.Icon]::FromHandle($bmp.GetHicon())
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+    $g.Clear([System.Drawing.Color]::Transparent)
+
+    # Monitor Screen Body (Dark Blue / Slate background)
+    $screenBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 20, 24, 40))
+    $screenPen   = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(255, 90, 105, 140), 1)
+    
+    # Screen frame: x=1, y=1, w=13, h=9
+    $rect = New-Object System.Drawing.Rectangle(1, 1, 13, 9)
+    $g.FillRectangle($screenBrush, $rect)
+    $g.DrawRectangle($screenPen, $rect)
+
+    # Monitor Stand Base: neck at x=7, y=10..12, foot at x=4..10, y=13
+    $standPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(255, 160, 175, 200), 1)
+    $g.DrawLine($standPen, 7, 10, 7, 12)
+    $g.DrawLine($standPen, 4, 13, 10, 13)
+
+    # Status LED Dot inside screen
+    $statusColor = [System.Drawing.Color]::FromArgb(255, $R, $G, $B)
+    $statusBrush = New-Object System.Drawing.SolidBrush($statusColor)
+    $g.FillEllipse($statusBrush, 5, 3, 5, 5)
+
+    $screenBrush.Dispose()
+    $screenPen.Dispose()
+    $standPen.Dispose()
+    $statusBrush.Dispose()
+    $g.Dispose()
+
+    $hIcon = $bmp.GetHicon()
+    $icon = [System.Drawing.Icon]::FromHandle($hIcon)
     $bmp.Dispose()
     return $icon
 }
 
 $iconOnline  = Make-Icon 34 197 94
-$iconOffline = Make-Icon 107 114 128
+$iconOffline = Make-Icon 239 68 68
 
 $tray          = New-Object System.Windows.Forms.NotifyIcon
 $tray.Text     = 'PC Remote Agent'
