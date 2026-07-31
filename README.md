@@ -127,8 +127,15 @@ To install silently without interactive wizard prompts:
 winget install Hobbs1210.PCRemoteAgent --silent
 ```
 
+#### Install directly from Remote GitHub Repository
+To install on any computer directly referencing your GitHub repository manifest (without needing to clone):
+
+```cmd
+winget install --manifest https://raw.githubusercontent.com/Hobbs1210/pc-remote/main/manifests/Hobbs1210.PCRemoteAgent.yaml
+```
+
 #### Install from Local Repository Manifest
-To test or install from the local repository manifest file:
+To test or install from a local repository manifest file:
 
 ```cmd
 winget install --manifest ./manifests/Hobbs1210.PCRemoteAgent.yaml
