@@ -1,5 +1,5 @@
 # ── Stage 1: Build ────────────────────────────────────────────────────────────
-FROM node:20-slim AS builder
+FROM node:24-slim AS builder
 
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm@9
@@ -22,7 +22,7 @@ RUN pnpm --filter @pc-remote/shared build
 RUN pnpm --filter backend build
 
 # ── Stage 2: Production Runner ────────────────────────────────────────────────
-FROM node:20-slim AS runner
+FROM node:24-slim AS runner
 
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm@9

@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Node.js-v20%2B-brightgreen?logo=node.js" alt="Node.js">
+  <img src="https://img.shields.io/badge/Node.js-v24-brightgreen?logo=node.js" alt="Node.js">
   <img src="https://img.shields.io/badge/pnpm-v10%2B-orange?logo=pnpm" alt="pnpm">
   <img src="https://img.shields.io/badge/Fastify-v4-blue?logo=fastify" alt="Fastify">
   <img src="https://img.shields.io/badge/React_Native-Expo_SDK_55-61DAFB?logo=react" alt="React Native Expo">
@@ -78,7 +78,7 @@ graph TD
 | Domain | Technologies & Libraries |
 | --- | --- |
 | **Monorepo Management** | `pnpm` workspaces, TypeScript ESM |
-| **Backend Service** | Node.js (v20+ / v24 recommended), Fastify 4, Prisma 5, Socket.IO 4, Winston |
+| **Backend Service** | Node.js (v24), Fastify 4, Prisma 5, Socket.IO 4, Winston |
 | **Database** | PostgreSQL 16, Adminer (Web GUI) |
 | **Windows Agent** | Node.js, esbuild CJS bundle, `pkg` binary compiler, WinSW Windows Service |
 | **Mobile Client** | React Native 0.83, Expo SDK 55, Zustand, Axios, `expo-camera` |
@@ -147,7 +147,7 @@ Download `pc-remote-agent-setup.exe` directly from the [GitHub Releases](https:/
 
 ### Prerequisites
 
-- **Node.js**: v20.x or higher (v24 recommended)
+- **Node.js**: v24.x
 - **Package Manager**: `pnpm` (`npm install -g pnpm`)
 - **Docker**: Docker Desktop (for database containers)
 - **Git**

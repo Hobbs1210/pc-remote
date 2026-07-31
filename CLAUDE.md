@@ -29,7 +29,7 @@ pc-remote/
 
 ### 1. Требования
 
-- Node.js 20+ (рекомендуется 24)
+- Node.js 24
 - pnpm (`npm install -g pnpm`)
 - Docker Desktop
 - Git
