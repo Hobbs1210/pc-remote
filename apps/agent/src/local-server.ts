@@ -14,9 +14,17 @@ let pendingVolume: VolumeAction | null = null
 let pendingScreenshot = false
 let screenshotResultCb: ((base64: string) => void) | null = null
 let pendingNotification: string | null = null
+let lastServerError: string | null = null
 
 export function setOnlineStatus(online: boolean) {
   isOnline = online
+  if (online) {
+    lastServerError = null
+  }
+}
+
+export function setServerError(message: string | null) {
+  lastServerError = message
 }
 
 // Запрашивает блокировку через трей (сервис в session 0 не может вызвать LockWorkStation напрямую)
@@ -269,10 +277,15 @@ function boundHtml() {
 }
 
 function waitingHtml() {
+  const serverUrl = config.serverUrl ?? 'Not configured'
+  const errDetail = lastServerError ? `<div style="background:#2a1a1a;border:1px solid #ff4d4d;color:#ff8080;padding:12px;border-radius:8px;font-size:13px;max-width:340px;word-break:break-word"><strong>Connection Status:</strong> ${lastServerError}</div>` : '<p>Connecting to backend server...</p>'
+
   return `<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>PC Remote</title><style>${style}</style></head><body>
-<h2>⏳ Please wait...</h2>
-<p>Agent is starting up. The QR code will appear shortly.</p>
+<h2>⏳ Connecting to Server...</h2>
+<p>Target Server: <strong style="color:#6c63ff">${serverUrl}</strong></p>
+${errDetail}
+<p style="font-size:12px;color:#888">Logs location: <code>%APPDATA%\\pc-remote-agent\\logs\\agent.log</code></p>
 <script>setTimeout(()=>location.reload(),3000)</script>
 </body></html>`
 }

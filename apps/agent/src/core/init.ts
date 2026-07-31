@@ -4,6 +4,8 @@ import { config, saveAgentToken, saveSecret } from '../utils/config.js'
 import { connectToServer } from './socket.js'
 import { printBindQR } from '../utils/qr.js'
 
+import { setServerError } from '../local-server.js'
+
 export async function registerDevice(): Promise<string | null> {
   let delay = 5_000
 
@@ -20,6 +22,7 @@ export async function registerDevice(): Promise<string | null> {
       const { secret } = response.data
       logger.info('Device registered successfully')
 
+      setServerError(null)
       saveSecret(secret)
       printBindQR(config.deviceId, secret)
 
@@ -28,11 +31,13 @@ export async function registerDevice(): Promise<string | null> {
       // 409 — устройство уже зарегистрировано, переходим к ожиданию привязки
       if (axios.isAxiosError(err) && err.response?.status === 409) {
         logger.info('Device already registered, waiting for bind...')
+        setServerError(null)
         return null
       }
 
       // Сервер недоступен — ретрай с экспоненциальным backoff (5s → 10s → … → 60s)
       const msg = err instanceof Error ? err.message : String(err)
+      setServerError(`Unreachable (${msg})`)
       logger.warn(`Server unreachable, retrying in ${delay / 1000}s — ${msg}`)
       await new Promise<void>(r => setTimeout(r, delay))
       delay = Math.min(delay * 2, 60_000)
