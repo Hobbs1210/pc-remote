@@ -250,9 +250,9 @@ const style = `
 function qrHtml(svg: string, deviceId: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>PC Remote — QR</title><style>${style}</style></head><body>
-<h2>Отсканируй QR-код</h2>
+<h2>Scan QR Code</h2>
 <div class="box">${svg}</div>
-<p>Открой мобильное приложение → Добавить устройство</p>
+<p>Open the mobile application &rarr; Add Device</p>
 <div class="id">${deviceId}</div>
 <script>setInterval(()=>fetch('/status').then(r=>r.json()).then(d=>{
   if(d.bound&&!d.secret)location.reload()
@@ -263,16 +263,16 @@ function qrHtml(svg: string, deviceId: string) {
 function boundHtml() {
   return `<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>PC Remote</title><style>${style}</style></head><body>
-<h2>✅ Устройство привязано</h2>
-<p>Для перепривязки используйте «Сбросить привязку» в меню трея.</p>
+<h2>✅ Device Paired</h2>
+<p>To pair with another account, click "Reset Device Binding" in the system tray menu.</p>
 </body></html>`
 }
 
 function waitingHtml() {
   return `<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>PC Remote</title><style>${style}</style></head><body>
-<h2>⏳ Подождите...</h2>
-<p>Агент запускается, QR-код скоро появится.</p>
+<h2>⏳ Please wait...</h2>
+<p>Agent is starting up. The QR code will appear shortly.</p>
 <script>setTimeout(()=>location.reload(),3000)</script>
 </body></html>`
 }

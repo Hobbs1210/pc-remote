@@ -9,7 +9,7 @@ export function printBindQR(deviceId: string, secret: string): void {
 
   const sep = '═'.repeat(52)
   console.log(`\n${sep}`)
-  console.log('  Отсканируй QR-код в мобильном приложении')
+  console.log('  Scan this QR code in the mobile application')
   console.log(`${sep}\n`)
 
   qrcode.generate(payload, { small: true })
