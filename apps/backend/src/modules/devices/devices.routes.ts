@@ -17,7 +17,7 @@ const devicesPublicRoutes: FastifyPluginAsync = async (app) => {
       return reply.send(result)
     } catch (err) {
       if (err instanceof DeviceError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }
@@ -37,7 +37,7 @@ const devicesPublicRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(201).send(result)
     } catch (err) {
       if (err instanceof DeviceError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }
@@ -60,7 +60,7 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(200).send(result)
     } catch (err) {
       if (err instanceof DeviceError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }
@@ -72,7 +72,7 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
       return await service.getDevice(request.user.userId, request.params.id)
     } catch (err) {
       if (err instanceof DeviceError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }
@@ -85,7 +85,7 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
       return reply.send(users)
     } catch (err) {
       if (err instanceof DeviceError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }
@@ -100,7 +100,7 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
         return reply.send(commands)
       } catch (err) {
         if (err instanceof DeviceError) {
-          return reply.status(err.statusCode).send({ error: err.message })
+          return reply.status(err.statusCode).send({ error: err.message, code: err.code })
         }
         throw err
       }
@@ -114,7 +114,7 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
       return reply.send(analytics)
     } catch (err) {
       if (err instanceof DeviceError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }
@@ -127,7 +127,7 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
       return reply.send({ apps: device.installedApps ?? [] })
     } catch (err) {
       if (err instanceof DeviceError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }
@@ -143,7 +143,7 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
         return reply.send(result)
       } catch (err) {
         if (err instanceof DeviceError) {
-          return reply.status(err.statusCode).send({ error: err.message })
+          return reply.status(err.statusCode).send({ error: err.message, code: err.code })
         }
         throw err
       }
@@ -162,7 +162,7 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(201).send(result)
     } catch (err) {
       if (err instanceof DeviceError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }
@@ -185,7 +185,7 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(202).send(result)
       } catch (err) {
         if (err instanceof DeviceError) {
-          return reply.status(err.statusCode).send({ error: err.message })
+          return reply.status(err.statusCode).send({ error: err.message, code: err.code })
         }
         throw err
       }
@@ -209,7 +209,7 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(200).send(schedule)
       } catch (err) {
         if (err instanceof DeviceError) {
-          return reply.status(err.statusCode).send({ error: err.message })
+          return reply.status(err.statusCode).send({ error: err.message, code: err.code })
         }
         throw err
       }
@@ -245,7 +245,7 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(200).send(result)
     } catch (err) {
       if (err instanceof DeviceError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }
@@ -267,7 +267,7 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(200).send(result)
     } catch (err) {
       if (err instanceof DeviceError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }
@@ -279,7 +279,7 @@ const devicesPrivateRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(204).send()
     } catch (err) {
       if (err instanceof DeviceError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }

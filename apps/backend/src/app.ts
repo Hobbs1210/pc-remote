@@ -26,6 +26,8 @@ import fs from 'node:fs'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const app = Fastify({
+  requestTimeout: 30000,
+  connectionTimeout: 30000,
   logger: {
     level: process.env.LOG_LEVEL ?? 'info',
     ...(process.env.NODE_ENV === 'development'

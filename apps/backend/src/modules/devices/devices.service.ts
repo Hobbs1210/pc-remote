@@ -49,10 +49,26 @@ function sendWolPacket(mac: string): Promise<boolean> {
   })
 }
 
+import fs from 'node:fs'
+
+function getPackageVersion(): string {
+  try {
+    const pkgPath = new URL('../../../package.json', import.meta.url)
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')) as { version?: string }
+      if (pkg.version) return `v${pkg.version}`
+    }
+  } catch {}
+  return 'v0.0.2'
+}
+
+const DEFAULT_AGENT_VERSION = getPackageVersion()
+
 export class DeviceError extends Error {
   constructor(
     message: string,
-    public statusCode: number
+    public statusCode: number,
+    public code: string = 'DEVICE_ERROR'
   ) {
     super(message)
     this.name = 'DeviceError'
@@ -70,7 +86,7 @@ export class DevicesService {
     const existing = await this.prisma.device.findUnique({
       where: { id: deviceId },
     })
-    if (existing) throw new DeviceError('Device already registered', 409)
+    if (existing) throw new DeviceError('Device already registered', 409, 'DEVICE_ALREADY_REGISTERED')
   
     const secret = crypto.randomBytes(32).toString('hex')
     const secretHash = await bcrypt.hash(secret, 10)
@@ -94,13 +110,13 @@ export class DevicesService {
       where: { id: input.deviceId },
     })
   
-    if (!device) throw new DeviceError('Device not found', 404)
+    if (!device) throw new DeviceError('Device not found', 404, 'DEVICE_NOT_FOUND')
     if (device.userId !== null) {
-      throw new DeviceError('Device already bound', 409)
+      throw new DeviceError('Device already bound', 409, 'DEVICE_ALREADY_BOUND')
     }
   
     const secretValid = await bcrypt.compare(input.secret, device.secret)
-    if (!secretValid) throw new DeviceError('Invalid secret', 403)
+    if (!secretValid) throw new DeviceError('Invalid secret', 403, 'INVALID_SECRET')
   
     const agentToken = crypto.randomBytes(48).toString('hex')
   
@@ -180,7 +196,7 @@ export class DevicesService {
       },
     })
   
-    if (!device) throw new DeviceError('Device not found', 404)
+    if (!device) throw new DeviceError('Device not found', 404, 'DEVICE_NOT_FOUND')
     return device
   }
 
@@ -189,8 +205,8 @@ export class DevicesService {
       where: { id: deviceId, userId },
       select: { id: true, macAddress: true },
     })
-    if (!device) throw new DeviceError('Device not found', 404)
-    if (!device.macAddress) throw new DeviceError('Device MAC address not recorded', 400)
+    if (!device) throw new DeviceError('Device not found', 404, 'DEVICE_NOT_FOUND')
+    if (!device.macAddress) throw new DeviceError('Device MAC address not recorded', 400, 'MAC_ADDRESS_MISSING')
 
     const sent = await sendWolPacket(device.macAddress)
     return { success: sent, macAddress: device.macAddress }
@@ -201,7 +217,7 @@ export class DevicesService {
     const device = await this.prisma.device.findFirst({
       where: { id: deviceId, userId },
     })
-    if (!device) throw new DeviceError('Device not found', 404)
+    if (!device) throw new DeviceError('Device not found', 404, 'DEVICE_NOT_FOUND')
 
     const command = await this.prisma.command.create({
       data: {
@@ -284,7 +300,7 @@ export class DevicesService {
     const device = await this.prisma.device.findFirst({
       where: { id: deviceId, userId },
     })
-    if (!device) throw new DeviceError('Device not found', 404)
+    if (!device) throw new DeviceError('Device not found', 404, 'DEVICE_NOT_FOUND')
 
     const data = {
       enabled: input.enabled,
@@ -312,7 +328,7 @@ export class DevicesService {
     const device = await this.prisma.device.findFirst({
       where: { id: deviceId, userId },
     })
-    if (!device) throw new DeviceError('Device not found', 404)
+    if (!device) throw new DeviceError('Device not found', 404, 'DEVICE_NOT_FOUND')
 
     // Отправляем бонусное время агенту через WebSocket
     const delivered = this.app.sendEvent(deviceId, WS_EVENTS.SERVER_BONUS_UPDATE, { minutes: input.minutes })
@@ -324,7 +340,7 @@ export class DevicesService {
     const device = await this.prisma.device.findFirst({
       where: { id: deviceId, userId },
     })
-    if (!device) throw new DeviceError('Device not found', 404)
+    if (!device) throw new DeviceError('Device not found', 404, 'DEVICE_NOT_FOUND')
 
     // Уведомляем агент до удаления — пока socket ещё аутентифицирован
     this.app.io.of('/agents').to(deviceId).emit(WS_EVENTS.SERVER_UNBIND, { deviceId })
@@ -336,7 +352,7 @@ export class DevicesService {
     const device = await this.prisma.device.findFirst({
       where: { id: deviceId, userId },
     })
-    if (!device) throw new DeviceError('Device not found', 404)
+    if (!device) throw new DeviceError('Device not found', 404, 'DEVICE_NOT_FOUND')
 
     const dailyUsages = await this.prisma.dailyUsage.findMany({
       where: { deviceId },
@@ -375,9 +391,9 @@ export class DevicesService {
     const device = await this.prisma.device.findFirst({
       where: { id: deviceId, userId },
     })
-    if (!device) throw new DeviceError('Device not found', 404)
+    if (!device) throw new DeviceError('Device not found', 404, 'DEVICE_NOT_FOUND')
 
-    let version = customVersion ?? 'v0.0.2'
+    let version = customVersion ?? DEFAULT_AGENT_VERSION
     let downloadUrl = customUrl ?? 'https://github.com/Hobbs1210/pc-remote/releases/latest/download/PC-Remote-Setup.exe'
 
     try {
@@ -412,7 +428,7 @@ export class DevicesService {
       select: { agentToken: true },
     })
 
-    if (!device) throw new DeviceError('Device not found', 404)
+    if (!device) throw new DeviceError('Device not found', 404, 'DEVICE_NOT_FOUND')
     return { agentToken: device.agentToken ?? null }
   }
 
@@ -422,7 +438,7 @@ export class DevicesService {
       select: { id: true },
     })
 
-    if (!device) throw new DeviceError('Device not found', 404)
+    if (!device) throw new DeviceError('Device not found', 404, 'DEVICE_NOT_FOUND')
 
     return this.prisma.deviceUser.findMany({
       where: { deviceId },
@@ -436,7 +452,7 @@ export class DevicesService {
       select: { id: true },
     })
 
-    if (!device) throw new DeviceError('Device not found', 404)
+    if (!device) throw new DeviceError('Device not found', 404, 'DEVICE_NOT_FOUND')
 
     return this.prisma.command.findMany({
       where: {

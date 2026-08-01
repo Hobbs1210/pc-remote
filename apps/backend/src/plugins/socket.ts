@@ -29,13 +29,28 @@ type AgentSocket = Socket<AgentToServerEvents, ServerToAgentEvents, InterServerE
 
 const screenshotCache = new Map<string, { image: string; capturedAt: string }>()
 
+const SCREENSHOT_TTL_MS = 10 * 60 * 1000 // 10 minutes
+
 const socketPlugin = fp(async (app: FastifyInstance) => {
   const socketService = new SocketService(app.prisma as PrismaClient)
 
+  const corsOrigins = (process.env.CORS_ORIGINS ?? process.env.ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+
+  const ioCorsOrigin =
+    process.env.NODE_ENV === 'development' || corsOrigins.length === 0
+      ? '*'
+      : corsOrigins.length === 1
+      ? corsOrigins[0]
+      : corsOrigins
+
   const io = new Server<AgentToServerEvents, ServerToAgentEvents, InterServerEvents, SocketData>(app.server, {
     cors: {
-      origin: process.env.ALLOWED_ORIGINS?.split(',') ?? '*',
+      origin: ioCorsOrigin,
       methods: ['GET', 'POST'],
+      credentials: true,
     },
     pingTimeout: 20000,
     pingInterval: 10000,
@@ -142,12 +157,27 @@ const socketPlugin = fp(async (app: FastifyInstance) => {
     return true
   })
 
-  app.decorate('getDeviceScreenshot', (deviceId: string) => screenshotCache.get(deviceId) ?? null)
+  app.decorate('getDeviceScreenshot', (deviceId: string) => {
+    const cached = screenshotCache.get(deviceId)
+    if (!cached) return null
+    if (Date.now() - new Date(cached.capturedAt).getTime() > SCREENSHOT_TTL_MS) {
+      screenshotCache.delete(deviceId)
+      return null
+    }
+    return cached
+  })
   app.decorate('io', io)
 
-  // Задача: помечать устройства как "away" если heartbeat не приходил 2 минуты
+  // Задача: чистить устаревшие скриншоты и помечать устройства как "away"
   const staleCheckInterval = setInterval(async () => {
-    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000)
+    const now = Date.now()
+    for (const [id, cached] of screenshotCache.entries()) {
+      if (now - new Date(cached.capturedAt).getTime() > SCREENSHOT_TTL_MS) {
+        screenshotCache.delete(id)
+      }
+    }
+
+    const twoMinutesAgo = new Date(now - 2 * 60 * 1000)
 
     await (app.prisma as PrismaClient).device.updateMany({
       where: {

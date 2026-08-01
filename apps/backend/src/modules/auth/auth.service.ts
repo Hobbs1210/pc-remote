@@ -21,7 +21,7 @@ export class AuthService {
     if (existing) {
       // Не говорим "email занят" — это утечка информации
       // Возвращаем ту же ошибку что и при неверном пароле
-      throw new AuthError('Invalid credentials', 401)
+      throw new AuthError('Invalid credentials', 401, 'AUTH_INVALID_CREDENTIALS')
     }
 
     const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS)
@@ -45,7 +45,7 @@ export class AuthService {
     const valid = await bcrypt.compare(input.password, passwordHash)
 
     if (!user || !valid) {
-      throw new AuthError('Invalid credentials', 401)
+      throw new AuthError('Invalid credentials', 401, 'AUTH_INVALID_CREDENTIALS')
     }
 
     return this.issueTokens(user.id, user.email)
@@ -58,7 +58,7 @@ export class AuthService {
     })
 
     if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
-      throw new AuthError('Invalid refresh token', 401)
+      throw new AuthError('Invalid refresh token', 401, 'AUTH_INVALID_REFRESH_TOKEN')
     }
 
     // Rotation: старый токен отзываем, выдаём новый
@@ -102,7 +102,8 @@ export class AuthService {
 export class AuthError extends Error {
   constructor(
     message: string,
-    public statusCode: number
+    public statusCode: number,
+    public code: string = 'AUTH_ERROR'
   ) {
     super(message)
     this.name = 'AuthError'

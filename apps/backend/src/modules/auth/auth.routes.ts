@@ -16,7 +16,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(201).send(result)
     } catch (err) {
       if (err instanceof AuthError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }
@@ -33,7 +33,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       return reply.send(result)
     } catch (err) {
       if (err instanceof AuthError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }
@@ -50,23 +50,23 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       return reply.send(result)
     } catch (err) {
       if (err instanceof AuthError) {
-        return reply.status(err.statusCode).send({ error: err.message })
+        return reply.status(err.statusCode).send({ error: err.message, code: err.code })
       }
       throw err
     }
   })
 
-  app.post('/logout', async (request, reply) => {
+  app.post('/logout', { preHandler: [app.authenticate] }, async (request, reply) => {
     const body = RefreshSchema.safeParse(request.body)
     if (body.success) {
       await service.logout(body.data.refreshToken)
     }
-    return reply.status(200).send({ status: 'ok' })
+    return reply.status(204).send()
   })
 
   app.post('/logout-all', { preHandler: [app.authenticate] }, async (request, reply) => {
     await service.logoutAll(request.user.userId)
-    return reply.status(200).send({ status: 'ok' })
+    return reply.status(204).send()
   })
 }
 
