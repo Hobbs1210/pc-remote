@@ -2,6 +2,7 @@ import 'dotenv/config'
 import Fastify from 'fastify'
 import prismaPlugin from './plugins/prisma.js'
 import jwtPlugin from './plugins/jwt.js'
+import corsPlugin from './plugins/cors.js'
 import socketPlugin from './plugins/socket.js'
 import authRoutes from './modules/auth/auth.routes.js'
 import {
@@ -19,6 +20,7 @@ const app = Fastify({
 })
 await app.register(prismaPlugin)
 await app.register(jwtPlugin)
+await app.register(corsPlugin)
 await app.register(socketPlugin)
 
 import { metricsPrivateRoutes } from './modules/metrics/metrics.routes.js'
