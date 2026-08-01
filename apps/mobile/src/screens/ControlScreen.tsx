@@ -76,13 +76,16 @@ interface CommandButtonProps {
 }
 
 function CommandButton({ label, emoji, color, onPress }: CommandButtonProps) {
+  const bgAlphaColor = color + '12' // ~7% opacity for subtle colored backing
   return (
     <TouchableOpacity
-      style={[styles.cmdButton, { borderColor: color }]}
+      style={[styles.cmdButton, { borderColor: 'rgba(255, 255, 255, 0.03)' }]}
       onPress={onPress}
     >
-      <Text style={styles.cmdEmoji}>{emoji}</Text>
-      <Text style={[styles.cmdLabel, { color }]}>{label}</Text>
+      <View style={[styles.emojiBg, { backgroundColor: bgAlphaColor }]}>
+        <Text style={styles.cmdEmoji}>{emoji}</Text>
+      </View>
+      <Text style={[styles.cmdLabel, { color: '#fff' }]}>{label}</Text>
     </TouchableOpacity>
   )
 }
@@ -668,37 +671,37 @@ export default function ControlScreen({ route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f23' },
+  container: { flex: 1, backgroundColor: '#0a0a16' },
   content: { padding: 16 },
   statusCard: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#121225',
     borderRadius: 16,
     padding: 16,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
   statusDot: { width: 12, height: 12, borderRadius: 6 },
   statusText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   statsRow: { flexDirection: 'row', justifyContent: 'space-around' },
   statBox: { alignItems: 'center' },
-  statVal: { color: '#6c63ff', fontSize: 20, fontWeight: '700' },
+  statVal: { color: '#7c3aed', fontSize: 20, fontWeight: '700' },
   statLbl: { color: '#666', fontSize: 12, marginTop: 2 },
   activeWindowBox: {
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#222',
+    borderTopColor: 'rgba(255, 255, 255, 0.04)',
   },
   activeWindowLbl: { color: '#666', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
   activeWindowVal: { color: '#fff', fontSize: 13, fontWeight: '500', marginTop: 4 },
   terminalBox: {
     flex: 1,
-    backgroundColor: '#0a0a16',
+    backgroundColor: '#050510',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#222',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   terminalLine: { color: '#4ade80', fontSize: 12, fontFamily: 'monospace', marginBottom: 4 },
 
@@ -717,26 +720,35 @@ const styles = StyleSheet.create({
   },
   cmdButton: {
     width: '47%',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#121225',
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
     borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
-  cmdEmoji: { fontSize: 28, marginBottom: 8 },
-  cmdLabel: { fontSize: 14, fontWeight: '600' },
+  emojiBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  cmdEmoji: { fontSize: 22 },
+  cmdLabel: { fontSize: 13, fontWeight: '600', letterSpacing: 0.2 },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'center',
     padding: 32,
   },
   modalCard: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#121225',
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   modalTitle: {
     color: '#fff',
@@ -745,13 +757,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalInput: {
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#0a0a16',
     borderRadius: 8,
     padding: 12,
     color: '#fff',
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     marginBottom: 16,
   },
   modalButtons: { flexDirection: 'row', gap: 12 },
@@ -761,45 +773,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   modalConfirm: {
     flex: 1,
     padding: 12,
     alignItems: 'center',
     borderRadius: 8,
-    backgroundColor: '#6c63ff',
+    backgroundColor: '#7c3aed',
   },
   bonusRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   bonusBtn: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#121225',
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#6c63ff44',
+    borderColor: 'rgba(124, 58, 237, 0.2)',
   },
   bonusEmoji: { fontSize: 18, marginBottom: 4 },
-  bonusLabel: { color: '#6c63ff', fontSize: 13, fontWeight: '600' },
+  bonusLabel: { color: '#a78bfa', fontSize: 13, fontWeight: '600' },
   scheduleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#121225',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
     marginBottom: 12,
   },
   scheduleEmoji: { fontSize: 22, marginRight: 12 },
   scheduleBtnText: { flex: 1, color: '#fff', fontSize: 15, fontWeight: '500' },
   scheduleArrow: { color: '#666', fontSize: 22 },
   usersCard: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#121225',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
     overflow: 'hidden',
   },
   userRow: {
@@ -807,14 +819,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#222',
+    borderBottomColor: 'rgba(255, 255, 255, 0.03)',
     gap: 12,
   },
   userIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#0a0a16',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -832,25 +844,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: '#ef444422',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
     borderWidth: 1,
-    borderColor: '#ef444488',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
   },
   killBtnText: { color: '#ef4444', fontSize: 12, fontWeight: '600' },
   diskRow: {
-
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#222',
+    borderBottomColor: 'rgba(255, 255, 255, 0.03)',
     gap: 10,
   },
   diskMount: { color: '#fff', fontSize: 13, fontWeight: '600', width: 32 },
   diskBarBg: {
     flex: 1,
     height: 6,
-    backgroundColor: '#333',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 3,
     overflow: 'hidden',
   },

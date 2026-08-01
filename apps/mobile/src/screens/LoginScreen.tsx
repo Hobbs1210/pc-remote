@@ -21,6 +21,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false)
   const [isRegister, setIsRegister] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [focusedInput, setFocusedInput] = useState<'email' | 'password' | null>(null)
   const { login, register } = useAuthStore()
 
   const handleSubmit = async () => {
@@ -56,16 +57,24 @@ export default function LoginScreen() {
         </Text>
 
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            focusedInput === 'email' && styles.inputFocused
+          ]}
           placeholder="Email"
           placeholderTextColor="#666"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
+          onFocus={() => setFocusedInput('email')}
+          onBlur={() => setFocusedInput(null)}
         />
 
-        <View style={styles.passwordRow}>
+        <View style={[
+          styles.passwordRow,
+          focusedInput === 'password' && styles.inputFocused
+        ]}>
           <TextInput
             style={styles.passwordInput}
             placeholder="Password"
@@ -73,6 +82,8 @@ export default function LoginScreen() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
+            onFocus={() => setFocusedInput('password')}
+            onBlur={() => setFocusedInput(null)}
           />
           <TouchableOpacity
             style={styles.eyeBtn}
@@ -110,67 +121,86 @@ export default function LoginScreen() {
   )
 }
 
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f23' },
-  inner: {
+  container: {
     flex: 1,
+    backgroundColor: '#0a0a16',
+    alignItems: 'center',
     justifyContent: 'center',
+  },
+  inner: {
+    width: '100%',
+    maxWidth: 400,
     paddingHorizontal: 32,
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 36,
-    fontWeight: 'bold',
+    fontSize: 38,
+    fontWeight: '800',
     color: '#fff',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#888',
+    fontSize: 15,
+    color: '#94a3b8',
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: 36,
+    fontWeight: '500',
   },
   input: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#121225',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  inputFocused: {
+    borderColor: '#7c3aed',
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
   button: {
-    backgroundColor: '#6c63ff',
+    backgroundColor: '#7c3aed',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     marginTop: 8,
-    marginBottom: 16,
+    marginBottom: 18,
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  toggle: { color: '#6c63ff', textAlign: 'center', fontSize: 14 },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  toggle: { color: '#94a3b8', textAlign: 'center', fontSize: 14, fontWeight: '500' },
   versionText: {
-    color: '#555',
+    color: '#475569',
     textAlign: 'center',
     fontSize: 12,
-    marginTop: 32,
+    marginTop: 40,
   },
   passwordRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#121225',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     marginBottom: 16,
   },
   passwordInput: {
     flex: 1,
     padding: 16,
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
   },
   eyeBtn: { paddingHorizontal: 14 },
   eyeIcon: { fontSize: 18 },

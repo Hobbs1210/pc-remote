@@ -124,7 +124,7 @@ export default function AnalyticsScreen({ route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f23' },
+  container: { flex: 1, backgroundColor: '#0a0a16' },
   content: { padding: 16 },
   center: { justifyContent: 'center', alignItems: 'center' },
   deviceTitle: { color: '#fff', fontSize: 22, fontWeight: '700' },
@@ -138,11 +138,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   card: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#121225',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#222',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   chartRow: {
     flexDirection: 'row',
@@ -153,32 +153,32 @@ const styles = StyleSheet.create({
   },
 
   barWrap: { flex: 1, alignItems: 'center', height: '100%' },
-  barVal: { color: '#6c63ff', fontSize: 10, fontWeight: '700', marginBottom: 4 },
+  barVal: { color: '#a78bfa', fontSize: 10, fontWeight: '700', marginBottom: 4 },
   barTrack: {
     flex: 1,
     width: 14,
-    backgroundColor: '#0f0f23',
+    backgroundColor: '#0a0a16',
     borderRadius: 7,
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
-  barFill: { backgroundColor: '#6c63ff', borderRadius: 7 },
+  barFill: { backgroundColor: '#7c3aed', borderRadius: 7 },
   barDate: { color: '#666', fontSize: 10, marginTop: 6 },
   emptyText: { color: '#666', textAlign: 'center', width: '100%', paddingVertical: 20 },
   appRow: { marginBottom: 14 },
   appInfo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   appName: { color: '#fff', fontSize: 14, fontWeight: '500', flex: 1, marginRight: 8 },
-  appTime: { color: '#4ade80', fontSize: 13, fontWeight: '700' },
-  progressTrack: { height: 6, backgroundColor: '#0f0f23', borderRadius: 3, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: '#4ade80', borderRadius: 3 },
+  appTime: { color: '#a78bfa', fontSize: 13, fontWeight: '700' },
+  progressTrack: { height: 4, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 2, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: '#7c3aed', borderRadius: 2 },
   refreshBtn: {
     marginTop: 24,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#121225',
     padding: 14,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   refreshBtnText: { color: '#cbd5e1', fontWeight: '600', fontSize: 14 },
 })

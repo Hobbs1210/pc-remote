@@ -363,65 +363,70 @@ export default function ScheduleScreen({ route }: Props) {
 
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f23' },
+  container: { flex: 1, backgroundColor: '#0a0a16' },
   content: { padding: 16, paddingBottom: 40 },
-  center: { flex: 1, backgroundColor: '#0f0f23', justifyContent: 'center', alignItems: 'center' },
+  center: { flex: 1, backgroundColor: '#0a0a16', justifyContent: 'center', alignItems: 'center' },
   sectionTitle: {
     color: '#888', fontSize: 12, fontWeight: '600',
     textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8,
   },
   card: {
-    backgroundColor: '#1a1a2e', borderRadius: 16, padding: 16,
-    marginBottom: 12, borderWidth: 1, borderColor: '#333',
+    backgroundColor: '#121225', borderRadius: 16, padding: 16,
+    marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardTitle: { color: '#fff', fontSize: 15, fontWeight: '600', marginBottom: 4 },
   cardSub: { color: '#888', fontSize: 13 },
 
-  // Время комендантского часа
+  // Curfew / Quiet Hours
   timeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 8 },
   timeField: { flex: 1, gap: 4 },
   timeLabel: { color: '#888', fontSize: 12 },
   timeInput: {
-    backgroundColor: '#0f0f23', borderRadius: 8, padding: 10,
-    color: '#fff', fontSize: 16, borderWidth: 1, borderColor: '#444', textAlign: 'center',
+    backgroundColor: '#0a0a16', borderRadius: 8, padding: 10,
+    color: '#fff', fontSize: 16, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)', textAlign: 'center',
   },
   timeSep: { color: '#888', fontSize: 18, marginTop: 18 },
 
-  // Лимит
+  // Limit
   limitRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   limitLabel: { color: '#ccc', fontSize: 14, flex: 1 },
   limitInputWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   limitInput: {
-    backgroundColor: '#0f0f23', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8,
-    color: '#fff', fontSize: 15, borderWidth: 1, borderColor: '#444',
+    backgroundColor: '#0a0a16', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8,
+    color: '#fff', fontSize: 15, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)',
     width: 70, textAlign: 'center',
   },
   limitUnit: { color: '#888', fontSize: 13 },
 
-  // Дни и слоты
+  // Days and slots
   dayLabel: { color: '#fff', fontSize: 15, fontWeight: '600', marginBottom: 10 },
   noSlots: { color: '#555', fontSize: 13, marginBottom: 8 },
   slotRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#0f0f23', borderRadius: 8,
+    backgroundColor: '#0a0a16', borderRadius: 8,
     paddingHorizontal: 12, paddingVertical: 8, marginBottom: 6,
   },
-  slotTime: { color: '#6c63ff', fontSize: 15, fontWeight: '500' },
+  slotTime: { color: '#a78bfa', fontSize: 15, fontWeight: '500' },
   removeBtn: { color: '#ef4444', fontSize: 16 },
   addForm: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
   timeInputSlot: {
-    flex: 1, backgroundColor: '#0f0f23', borderRadius: 8, padding: 8,
-    color: '#fff', fontSize: 15, borderWidth: 1, borderColor: '#444', textAlign: 'center',
+    flex: 1, backgroundColor: '#0a0a16', borderRadius: 8, padding: 8,
+    color: '#fff', fontSize: 15, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)', textAlign: 'center',
   },
-  confirmBtn: { backgroundColor: '#6c63ff', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
+  confirmBtn: { backgroundColor: '#7c3aed', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
   confirmBtnText: { color: '#fff', fontSize: 16 },
   addBtn: { marginTop: 4 },
-  addBtnText: { color: '#6c63ff', fontSize: 14 },
+  addBtnText: { color: '#a78bfa', fontSize: 14 },
 
   saveBtn: {
-    backgroundColor: '#6c63ff', borderRadius: 14,
+    backgroundColor: '#7c3aed', borderRadius: 14,
     padding: 16, alignItems: 'center', marginTop: 8,
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   saveBtnDisabled: { opacity: 0.6 },
   saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },

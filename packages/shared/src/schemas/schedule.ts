@@ -32,6 +32,7 @@ export const WeeklyScheduleSchema = z.object({
   downtime: DowntimeConfigSchema.optional(),
   dailyLimit: DailyLimitConfigSchema.optional(),
   blockedApps: z.array(z.string()).optional(),
+  lockUntil: z.string().datetime().nullable().optional(),
 })
 
 

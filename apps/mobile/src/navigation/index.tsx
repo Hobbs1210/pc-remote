@@ -2,7 +2,7 @@ import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { Text, View, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native'
+import { Text, View, TouchableOpacity, StyleSheet, Alert, TextInput, Platform } from 'react-native'
 import { useAuthStore } from '../store/auth'
 import { loadServerUrl, setServerUrl, API_URL, DEFAULT_API_URL } from '../api/client'
 import LoginScreen from '../screens/LoginScreen'
@@ -108,6 +108,23 @@ const s = StyleSheet.create({
   btnSecondaryText: { color: '#aaa', fontSize: 15 },
   btnDanger: { backgroundColor: '#3d1a1a', borderWidth: 1, borderColor: '#7f1d1d' },
   btnDangerText: { color: '#ef4444', fontSize: 16, fontWeight: '600' },
+  webContainer: {
+    flex: 1,
+    backgroundColor: '#050510',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  webCard: {
+    width: '100%',
+    maxWidth: 500,
+    height: '100%',
+    backgroundColor: '#0f0f23',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 10,
+  },
 })
 
 function TabNavigator() {
@@ -150,7 +167,9 @@ export default function Navigation() {
 
   if (isLoading) return null
 
-  return (
+  const isWeb = Platform.OS === 'web'
+
+  const navigationContent = (
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={{
@@ -192,9 +211,20 @@ export default function Navigation() {
               options={({ route }) => ({ title: `Analytics — ${route.params.deviceName}` })}
             />
           </>
-
         )}
       </Stack.Navigator>
     </NavigationContainer>
   )
+
+  if (isWeb) {
+    return (
+      <View style={s.webContainer}>
+        <View style={s.webCard}>
+          {navigationContent}
+        </View>
+      </View>
+    )
+  }
+
+  return navigationContent
 }

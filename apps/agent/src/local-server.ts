@@ -280,10 +280,23 @@ const style = `
     align-items:center;justify-content:center}
   .id{font-family:monospace;font-size:12px;color:#6c63ff;background:#1a1a2e;
     padding:8px 16px;border-radius:8px;word-break:break-all;max-width:320px;text-align:center}
+
+  @media(max-width:480px){
+    body{padding:16px;gap:16px}
+    h2{font-size:20px}
+    .box{padding:16px}
+    .box svg{width:200px;height:200px}
+    .hint-box{padding:12px}
+    .field-row{flex-direction:column;align-items:stretch;gap:6px}
+    .copy-btn{width:100%;padding:10px}
+    .grid{grid-template-columns:1fr !important;gap:8px}
+    .btn{display:block;text-align:center;margin-top:8px}
+  }
 `
 
 function qrHtml(svg: string, deviceId: string, secret: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PC Remote — QR</title><style>${style}
   .field-row{display:flex;align-items:center;gap:8px;width:100%;max-width:360px}
   .copy-field{font-family:monospace;font-size:12px;color:#6c63ff;background:#1a1a2e;
@@ -328,6 +341,7 @@ function qrHtml(svg: string, deviceId: string, secret: string) {
 
 function boundHtml() {
   return `<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PC Remote</title><style>${style}</style></head><body>
 <h2>✅ Device Paired</h2>
 <p>To pair with another account, click "Reset Device Binding" in the system tray menu.</p>
@@ -336,9 +350,10 @@ function boundHtml() {
 
 function waitingHtml() {
   const serverUrl = config.serverUrl ?? 'Not configured'
-  const errDetail = lastServerError ? `<div style="background:#2a1a1a;border:1px solid #ff4d4d;color:#ff8080;padding:12px;border-radius:8px;font-size:13px;max-width:340px;word-break:break-word"><strong>Connection Status:</strong> ${lastServerError}</div>` : '<p>Connecting to backend server...</p>'
+  const errDetail = lastServerError ? `<div style="background:#2a1a1a;border:1px solid #ff4d4d;color:#ff8080;padding:12px;border-radius:8px;font-size:13px;max-width:100%;width:340px;box-sizing:border-box;word-break:break-word"><strong>Connection Status:</strong> ${lastServerError}</div>` : '<p>Connecting to backend server...</p>'
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PC Remote</title><style>${style}</style></head><body>
 <h2>⏳ Connecting to Server...</h2>
 <p>Target Server: <strong style="color:#6c63ff">${serverUrl}</strong></p>
@@ -353,6 +368,7 @@ function dashboardHtml() {
   const boundStatus = state.agentToken ? '<span style="color:#22c55e">Paired</span>' : '<span style="color:#f59e0b">Unpaired</span>'
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PC Remote — Local Diagnostics</title><style>${style}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:440px}
   .card{background:#1a1a2e;padding:16px;border-radius:12px;text-align:left}

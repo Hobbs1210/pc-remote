@@ -114,6 +114,7 @@ model Schedule {
   dailyLimit Json    @default("{}")
   // Заблокированные приложения: ["chrome.exe", "game.exe"]
   blockedApps Json   @default("[]")
+  lockUntil DateTime? // Временная блокировка до указанного времени
 
   updatedAt DateTime @updatedAt
 

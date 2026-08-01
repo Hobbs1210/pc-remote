@@ -309,6 +309,7 @@ export class DevicesService {
       downtime: input.downtime !== undefined ? (input.downtime as Prisma.InputJsonValue) : Prisma.JsonNull,
       dailyLimit: input.dailyLimit !== undefined ? (input.dailyLimit as Prisma.InputJsonValue) : Prisma.JsonNull,
       blockedApps: (input.blockedApps ?? []) as Prisma.InputJsonValue,
+      lockUntil: input.lockUntil ? new Date(input.lockUntil) : null,
     }
 
     const schedule = await this.prisma.schedule.upsert({

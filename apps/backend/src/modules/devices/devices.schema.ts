@@ -37,6 +37,7 @@ export const UpdateScheduleSchema = z.object({
     minutesWeekend: z.number().int().min(1).max(1440),
   }).optional(),
   blockedApps: z.array(z.string()).optional(),
+  lockUntil: z.string().datetime().nullable().optional(),
 })
 
 
