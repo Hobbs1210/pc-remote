@@ -78,20 +78,29 @@ export function startLocalServer() {
       return
     }
 
-    // GET /status
+    // GET /status — Bug #22 fix: only expose internal pending state to authenticated callers
     if (req.method === 'GET' && req.url === '/status') {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
-      res.end(JSON.stringify({
-        online: isOnline,
-        deviceId: config.deviceId,
-        bound: !!state.agentToken,
-        pendingLock,
-        pendingLockMessage,
-        pendingLogoff,
-        pendingVolume,
-        pendingScreenshot,
-        pendingNotification,
-      }))
+      const isAuthed = checkLocalToken(req)
+      if (isAuthed) {
+        res.end(JSON.stringify({
+          online: isOnline,
+          deviceId: config.deviceId,
+          bound: !!state.agentToken,
+          pendingLock,
+          pendingLockMessage,
+          pendingLogoff,
+          pendingVolume,
+          pendingScreenshot,
+          pendingNotification,
+        }))
+      } else {
+        // Unauthenticated: only basic info (used by QR page polling)
+        res.end(JSON.stringify({
+          online: isOnline,
+          bound: !!state.agentToken,
+        }))
+      }
       return
     }
 
@@ -153,10 +162,16 @@ export function startLocalServer() {
 
     const body = await parseBody(req)
 
-    // POST /setup-password — без токена, для установщика (первая установка и переустановка)
+    // POST /setup-password — Bug #5 fix: only allow unauthenticated if no password is set yet
     if (req.url === '/setup-password') {
       const password = body['password'] as string | undefined
       if (!password) { res.writeHead(400); res.end(); return }
+      // If password already exists, require localToken to change it
+      if (state.passwordHash && !checkLocalToken(req)) {
+        res.writeHead(403)
+        res.end(JSON.stringify({ error: 'Password already set — use X-Local-Token' }))
+        return
+      }
       const hash = await bcrypt.hash(password, 10)
       savePasswordHash(hash)
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
@@ -333,9 +348,9 @@ function qrHtml(svg: string, deviceId: string, secret: string) {
   <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('sec').textContent);this.textContent='✓ Copied'">Copy</button>
 </div>
 
-<script>setInterval(()=>fetch('/status').then(r=>r.json()).then(d=>{
-  if(d.bound&&!d.secret)location.reload()
-}),3000)</script>
+<script>let _qrPoll=setInterval(()=>fetch('/status').then(r=>r.json()).then(d=>{
+  if(d.bound)location.reload()
+}),3000);document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(_qrPoll)})</script>
 </body></html>`
 }
 
@@ -390,6 +405,6 @@ function dashboardHtml() {
   <a href="/logs" class="btn" target="_blank">📄 View Live Agent Logs</a>
   <a href="/qr" class="btn" style="background:#22c55e">📱 Show Pairing QR Code</a>
 </div>
-<script>setTimeout(()=>location.reload(),5000)</script>
+<script>let _dashTimer=setTimeout(()=>location.reload(),5000);document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTimeout(_dashTimer)})</script>
 </body></html>`
 }
