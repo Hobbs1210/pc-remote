@@ -1,5 +1,5 @@
 import os from 'node:os'
-import { execSync } from 'node:child_process'
+import { execSync, execFileSync } from 'node:child_process'
 
 export interface ActiveUser {
   name: string
@@ -16,6 +16,20 @@ export interface DiskInfo {
   used: number
 }
 
+export interface ProcessInfo {
+  pid: number
+  name: string
+  cpuPercent?: number
+  memMb?: number
+}
+
+export interface ActiveWindow {
+  title: string
+  processName: string
+  pid?: number
+}
+
+// Bug #16 fix: single SystemInfo interface (removed duplicate at top of file)
 export interface SystemInfo {
   cpuPercent: number
   ramPercent: number
@@ -23,6 +37,10 @@ export interface SystemInfo {
   activeUsers: ActiveUser[]
   platform: string
   disks: DiskInfo[]
+  topProcesses: ProcessInfo[]
+  macAddress?: string | undefined
+  activeWindow?: ActiveWindow | undefined
+  volume?: { level: number; muted: boolean } | undefined
 }
 
 // Служебные учётки Windows — исключаем по точному имени или префиксу
@@ -38,6 +56,12 @@ function isServiceAccount(name: string): boolean {
     SERVICE_ACCOUNT_EXACT.has(name) ||
     SERVICE_ACCOUNT_PREFIXES.some((p) => upper.startsWith(p.toUpperCase()))
   )
+}
+
+// Bug #4 fix: validate process name to prevent command injection
+const SAFE_PROCESS_NAME_RE = /^[a-zA-Z0-9._\- ]+$/
+function isValidProcessName(name: string): boolean {
+  return SAFE_PROCESS_NAME_RE.test(name) && name.length <= 260
 }
 
 // CPU usage — усредняем за 1 секунду
@@ -228,33 +252,6 @@ function getDiskInfo(): DiskInfo[] {
   }
 }
 
-export interface ProcessInfo {
-  pid: number
-  name: string
-  cpuPercent?: number
-  memMb?: number
-}
-
-export interface ActiveWindow {
-  title: string
-  processName: string
-}
-
-export interface SystemInfo {
-  cpuPercent: number
-  ramPercent: number
-  uptime: number
-  activeUsers: ActiveUser[]
-  platform: string
-  disks: DiskInfo[]
-  topProcesses: ProcessInfo[]
-  macAddress?: string | undefined
-  activeWindow?: ActiveWindow | undefined
-  volume?: { level: number; muted: boolean } | undefined
-}
-
-
-
 export function getMacAddress(): string | undefined {
   const interfaces = os.networkInterfaces()
   for (const name of Object.keys(interfaces)) {
@@ -315,7 +312,7 @@ export function getActiveWindow(): ActiveWindow | undefined {
         $pid = 0
         [WinApi]::GetWindowThreadProcessId($hwnd, [ref]$pid) | Out-Null
         $p = Get-Process -Id $pid -ErrorAction SilentlyContinue
-        @{ title = $sb.ToString(); processName = $p.ProcessName } | ConvertTo-Json -Compress
+        @{ title = $sb.ToString(); processName = $p.ProcessName; pid = $pid } | ConvertTo-Json -Compress
       }
     `
     const output = execSync(
@@ -323,11 +320,12 @@ export function getActiveWindow(): ActiveWindow | undefined {
       { encoding: 'utf-8', windowsHide: true }
     )
     if (!output.trim()) return undefined
-    const parsed = JSON.parse(output.trim()) as { title?: string; processName?: string }
+    const parsed = JSON.parse(output.trim()) as { title?: string; processName?: string; pid?: number }
     if (parsed.title || parsed.processName) {
       return {
         title: parsed.title ?? '',
         processName: parsed.processName ?? '',
+        ...(parsed.pid !== undefined && { pid: parsed.pid }),
       }
     }
   } catch {
@@ -336,10 +334,50 @@ export function getActiveWindow(): ActiveWindow | undefined {
   return undefined
 }
 
+// Bug #7 fix: actually read volume level from Windows Audio via PowerShell
 export function getVolume(): { level: number; muted: boolean } | undefined {
   if (process.platform !== 'win32') return undefined
   try {
-    return { level: 50, muted: false }
+    const psScript = `
+      Add-Type -TypeDefinition @'
+      using System;
+      using System.Runtime.InteropServices;
+      [Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+      interface IAudioEndpointVolume {
+        int _0(); int _1(); int _2(); int _3(); int _4(); int _5(); int _6(); int _7(); int _8();
+        int GetMasterVolumeLevelScalar(out float pfLevel);
+        int _10(); int _11();
+        int GetMute(out bool pbMute);
+      }
+      [Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+      interface IMMDevice { int Activate(ref Guid iid, int dwClsCtx, IntPtr pActivationParams, [MarshalAs(UnmanagedType.IUnknown)] out object ppInterface); }
+      [Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+      interface IMMDeviceEnumerator { int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice ppDevice); }
+      [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")] class MMDeviceEnumerator {}
+      public class VolHelper {
+        public static string Get() {
+          var enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
+          IMMDevice dev; enumerator.GetDefaultAudioEndpoint(0, 1, out dev);
+          Guid iid = typeof(IAudioEndpointVolume).GUID;
+          object o; dev.Activate(ref iid, 1, IntPtr.Zero, out o);
+          var vol = (IAudioEndpointVolume)o;
+          float level; vol.GetMasterVolumeLevelScalar(out level);
+          bool muted; vol.GetMute(out muted);
+          return ((int)(level * 100)) + "|" + (muted ? "1" : "0");
+        }
+      }
+'@ -ErrorAction SilentlyContinue
+      [VolHelper]::Get()
+    `
+    const output = execSync(
+      `powershell.exe -NonInteractive -NoProfile -Command "${psScript.replace(/\n/g, ' ')}"`,
+      { encoding: 'utf-8', timeout: 5000, windowsHide: true }
+    ).trim()
+    if (output && output.includes('|')) {
+      const [levelStr, mutedStr] = output.split('|')
+      return { level: parseInt(levelStr!, 10) || 0, muted: mutedStr === '1' }
+    }
+    return undefined
   } catch {
     return undefined
   }
@@ -364,7 +402,8 @@ export function setVolumeLevel(percent: number): boolean {
 export function killProcess(pid: number): boolean {
   try {
     if (process.platform === 'win32') {
-      execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore', windowsHide: true })
+      // pid is a number — safe to interpolate
+      execFileSync('taskkill', ['/F', '/PID', String(pid)], { stdio: 'ignore', windowsHide: true })
     } else {
       process.kill(pid, 'SIGKILL')
     }
@@ -374,12 +413,16 @@ export function killProcess(pid: number): boolean {
   }
 }
 
+// Bug #4 fix: validate process name before passing to shell
 export function killProcessByName(name: string): boolean {
+  if (!isValidProcessName(name)) {
+    return false
+  }
   try {
     if (process.platform === 'win32') {
-      execSync(`taskkill /F /IM "${name}"`, { stdio: 'ignore', windowsHide: true })
+      execFileSync('taskkill', ['/F', '/IM', name], { stdio: 'ignore', windowsHide: true })
     } else {
-      execSync(`pkill -f "${name}"`, { stdio: 'ignore' })
+      execFileSync('pkill', ['-f', name], { stdio: 'ignore' })
     }
     return true
   } catch {
@@ -387,22 +430,29 @@ export function killProcessByName(name: string): boolean {
   }
 }
 
+// Bug #8 fix: use PowerShell to read actual network adapter byte counters on Windows
 let lastNetSample: { rxBytes: number; txBytes: number; time: number } | null = null
 
 export function getNetworkSpeed(): { rxKbps: number; txKbps: number } {
   try {
-    const net = os.networkInterfaces()
     let totalRx = 0
     let totalTx = 0
 
-    for (const devName in net) {
-      const iface = net[devName]
-      if (!iface) continue
-      for (const alias of iface) {
-        if (!alias.internal) {
-          // Approximate network byte counters
-          totalRx += (alias as unknown as { rx_bytes?: number }).rx_bytes || 0
-          totalTx += (alias as unknown as { tx_bytes?: number }).tx_bytes || 0
+    if (process.platform === 'win32') {
+      // Use Get-NetAdapterStatistics which provides actual byte counters
+      const output = execSync(
+        'powershell.exe -NonInteractive -NoProfile -Command "Get-NetAdapterStatistics -ErrorAction SilentlyContinue | Select-Object ReceivedBytes,SentBytes | ConvertTo-Json -Compress"',
+        { encoding: 'utf-8', timeout: 5000, windowsHide: true }
+      ).trim()
+      if (output) {
+        const parsed: unknown = JSON.parse(output)
+        const arr = Array.isArray(parsed) ? parsed : [parsed]
+        for (const item of arr) {
+          if (item && typeof item === 'object') {
+            const rec = item as Record<string, unknown>
+            totalRx += Number(rec['ReceivedBytes'] ?? 0)
+            totalTx += Number(rec['SentBytes'] ?? 0)
+          }
         }
       }
     }
@@ -482,4 +532,4 @@ export async function getSystemInfo(): Promise<SystemInfo & { networkSpeed?: { r
     ...(volume !== undefined && { volume }),
     networkSpeed,
   }
-}
+}

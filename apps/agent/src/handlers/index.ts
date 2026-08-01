@@ -1,9 +1,20 @@
-import { execSync } from 'node:child_process'
+import { execSync, execFileSync } from 'node:child_process'
 import { log as logger } from '../utils/logger.js'
 import { setPendingLock, setPendingVolume, setPendingScreenshot } from '../local-server.js'
 import { killProcess, setVolumeLevel } from '../utils/sysinfo.js'
 import { downloadAndInstallUpdate } from '../utils/updater.js'
 import type { CommandPayload } from '@pc-remote/shared'
+
+// Sanitize a string for use as a shutdown /c comment — strip shell metacharacters
+function sanitizeShellArg(input: string): string {
+  // Remove characters that could break out of quoting or inject commands
+  return input.replace(/["&|<>^%!\r\n]/g, '')
+}
+
+// Encode a PowerShell script as Base64 for -EncodedCommand (prevents all injection)
+function encodePsCommand(script: string): string {
+  return Buffer.from(script, 'utf16le').toString('base64')
+}
 
 export async function executeCommand(payload: CommandPayload): Promise<string | void> {
   const { type, delaySeconds = 0, message, pid, commandText, volumePercent, downloadUrl, version } = payload
@@ -16,19 +27,25 @@ export async function executeCommand(payload: CommandPayload): Promise<string | 
   }
 
   switch (type) {
-    case 'SHUTDOWN':
-      execSync(
-        `shutdown /s /t ${delaySeconds}${message ? ` /c "${message}"` : ''}`,
-        { windowsHide: true }
-      )
+    case 'SHUTDOWN': {
+      // Bug #1 fix: use execFileSync with argument array to avoid shell injection
+      const args = ['/s', '/t', String(delaySeconds)]
+      if (message) {
+        args.push('/c', sanitizeShellArg(message))
+      }
+      execFileSync('shutdown', args, { windowsHide: true })
       break
+    }
 
-    case 'REBOOT':
-      execSync(
-        `shutdown /r /t ${delaySeconds}${message ? ` /c "${message}"` : ''}`,
-        { windowsHide: true }
-      )
+    case 'REBOOT': {
+      // Bug #1 fix: use execFileSync with argument array to avoid shell injection
+      const args = ['/r', '/t', String(delaySeconds)]
+      if (message) {
+        args.push('/c', sanitizeShellArg(message))
+      }
+      execFileSync('shutdown', args, { windowsHide: true })
       break
+    }
 
     case 'LOCK':
       if (delaySeconds > 0) {
@@ -79,23 +96,24 @@ export async function executeCommand(payload: CommandPayload): Promise<string | 
       break
 
     case 'SHOW_MESSAGE':
+      // Bug #2 fix: use -EncodedCommand to prevent injection via message content
       if (message) {
         try {
-          execSync(`msg.exe * "${message.replace(/"/g, '""')}"`, { windowsHide: true })
+          execFileSync('msg.exe', ['*', sanitizeShellArg(message)], { windowsHide: true })
         } catch {
-          execSync(
-            `powershell.exe -NonInteractive -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('${message.replace(/'/g, "''")}', 'PC Remote')"`,
-            { windowsHide: true }
-          )
+          const psScript = `Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show(${JSON.stringify(message)}, 'PC Remote')`
+          execFileSync('powershell.exe', ['-NonInteractive', '-NoProfile', '-EncodedCommand', encodePsCommand(psScript)], { windowsHide: true })
         }
       }
       break
 
     case 'EXEC_TERMINAL':
+      // Bug #3 fix: use -EncodedCommand to safely pass arbitrary PowerShell without escaping issues
       if (commandText) {
         try {
-          const output = execSync(
-            `powershell.exe -NonInteractive -NoProfile -Command "${commandText.replace(/"/g, '""')}"`,
+          const output = execFileSync(
+            'powershell.exe',
+            ['-NonInteractive', '-NoProfile', '-EncodedCommand', encodePsCommand(commandText)],
             { encoding: 'utf-8', timeout: 15000, windowsHide: true }
           )
           return output
@@ -123,8 +141,6 @@ export async function executeCommand(payload: CommandPayload): Promise<string | 
       logger.warn({ type }, 'Unknown command type')
   }
 }
-
-
 
 
 

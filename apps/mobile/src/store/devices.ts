@@ -34,6 +34,7 @@ export interface ProcessInfo {
 export interface ActiveWindow {
   title: string
   processName: string
+  pid?: number
 }
 
 export interface Device {

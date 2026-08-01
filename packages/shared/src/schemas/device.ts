@@ -35,6 +35,7 @@ export type ProcessInfo = z.infer<typeof ProcessInfoSchema>
 export const ActiveWindowSchema = z.object({
   title: z.string(),
   processName: z.string(),
+  pid: z.number().int().optional(),
 })
 
 export type ActiveWindow = z.infer<typeof ActiveWindowSchema>

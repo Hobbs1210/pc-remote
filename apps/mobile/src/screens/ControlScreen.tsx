@@ -462,14 +462,33 @@ export default function ControlScreen({ route }: Props) {
               </View>
             </View>
 
-            {device.activeWindow?.title ? (
-              <View style={styles.activeWindowBox}>
-                <Text style={styles.activeWindowLbl}>ACTIVE APP</Text>
-                <Text style={styles.activeWindowVal} numberOfLines={1}>
-                  🖥 {device.activeWindow.title}
-                </Text>
-              </View>
-            ) : null}
+            {(() => {
+              const activeWin = device.activeWindow
+              if (!activeWin || !activeWin.title) return null
+              return (
+                <View style={styles.activeWindowBox}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.activeWindowLbl}>ACTIVE APP</Text>
+                    <Text style={styles.activeWindowVal} numberOfLines={1}>
+                      🖥 {activeWin.title}
+                    </Text>
+                    {activeWin.processName ? (
+                      <Text style={styles.activeWindowSubVal}>
+                        {activeWin.processName} {activeWin.pid ? `(PID: ${activeWin.pid})` : ''}
+                      </Text>
+                    ) : null}
+                  </View>
+                  {activeWin.pid ? (
+                    <TouchableOpacity
+                      style={styles.activeWindowKillBtn}
+                      onPress={() => handleKillProcess(activeWin.pid!, activeWin.processName || 'Active App')}
+                    >
+                      <Text style={styles.activeWindowKillBtnText}>End Task</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              )
+            })()}
           </>
         )}
       </View>
@@ -889,6 +908,9 @@ const styles = StyleSheet.create({
   statVal: { color: '#7c3aed', fontSize: 20, fontWeight: '700' },
   statLbl: { color: '#666', fontSize: 12, marginTop: 2 },
   activeWindowBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
@@ -896,6 +918,26 @@ const styles = StyleSheet.create({
   },
   activeWindowLbl: { color: '#666', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
   activeWindowVal: { color: '#fff', fontSize: 13, fontWeight: '500', marginTop: 4 },
+  activeWindowSubVal: {
+    color: '#666',
+    fontSize: 12,
+    marginTop: 2,
+    fontFamily: 'monospace',
+  },
+  activeWindowKillBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    marginLeft: 12,
+  },
+  activeWindowKillBtnText: {
+    color: '#ef4444',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   terminalBox: {
     flex: 1,
     backgroundColor: '#050510',
