@@ -40,20 +40,22 @@ export async function connectToServer(tokenOverride?: string): Promise<void> {
     timeout: 10_000,
   })
 
+  // Bug #9 fix: register screenshot callback once per socket instance, not on every reconnect
+  onScreenshotResult((image) => {
+    logger.info(`Forwarding screenshot to backend imageLen=${image.length}`)
+    socket?.emit(WS_EVENTS.AGENT_SCREENSHOT, {
+      deviceId: config.deviceId,
+      image,
+      capturedAt: new Date().toISOString(),
+    })
+    logger.info('Screenshot emitted to backend')
+  })
+
   socket.on('connect', async () => {
     logger.info('Connected to server')
     setOnlineStatus(true)
     startHeartbeat()
     sendLocalUsers()
-    onScreenshotResult((image) => {
-      logger.info(`Forwarding screenshot to backend imageLen=${image.length}`)
-      socket?.emit(WS_EVENTS.AGENT_SCREENSHOT, {
-        deviceId: config.deviceId,
-        image,
-        capturedAt: new Date().toISOString(),
-      })
-      logger.info('Screenshot emitted to backend')
-    })
   })
 
   socket.on('disconnect', (reason) => {
