@@ -86,10 +86,12 @@ export function savePasswordHash(hash: string) {
   state.passwordHash = hash
 }
 
+// Bug #10 fix: regenerate localToken on reset so tray can still authenticate
 export function resetAgentConfig() {
   const newCfg: AgentConfig = {
     deviceId: crypto.randomUUID(),
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    localToken: crypto.randomBytes(32).toString('hex'),
   }
   fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true })
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(newCfg, null, 2))
@@ -99,20 +101,21 @@ export function resetAgentConfig() {
 const env = ConfigSchema.parse(process.env)
 const agentConfig = loadOrCreateAgentConfig()
 
-export const config = {
-  serverUrl: (env.SERVER_URL ?? '').replace(/\/+$/, ''),
-  deviceId: agentConfig.deviceId,
-  agentToken: agentConfig.agentToken,
-  secret: agentConfig.secret,
-  timezone: agentConfig.timezone,
-  passwordHash: agentConfig.passwordHash,
-  localToken: agentConfig.localToken,
-} as const
-
 // Изменяемое состояние — обновляется при сохранении
 export const state = {
   secret: agentConfig.secret as string | undefined,
   agentToken: agentConfig.agentToken as string | undefined,
   passwordHash: agentConfig.passwordHash as string | undefined,
   localToken: agentConfig.localToken as string | undefined,
+}
+
+// Bug #14 fix: config uses getters for mutable fields so they stay in sync with state
+export const config = {
+  serverUrl: (env.SERVER_URL ?? '').replace(/\/+$/, ''),
+  deviceId: agentConfig.deviceId,
+  timezone: agentConfig.timezone,
+  get agentToken() { return state.agentToken },
+  get secret() { return state.secret },
+  get passwordHash() { return state.passwordHash },
+  get localToken() { return state.localToken },
 }
