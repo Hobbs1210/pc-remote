@@ -20,7 +20,16 @@ export default function ScanScreen() {
   const navigation = useNavigation()
   const { bindDevice } = useDevicesStore()
   const [permission, requestPermission] = useCameraPermissions()
-  const [mode, setMode] = useState<Mode>('qr')
+  
+  const isWeb = Platform.OS === 'web'
+  const isSecureWebContext =
+    !isWeb ||
+    (typeof window !== 'undefined' &&
+      (window.isSecureContext ||
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1'))
+
+  const [mode, setMode] = useState<Mode>(isWeb && !isSecureWebContext ? 'manual' : 'qr')
 
   // QR state
   const [scanned, setScanned] = useState(false)
@@ -138,6 +147,24 @@ export default function ScanScreen() {
 
   // ── QR mode ─────────────────────────────────────────────────────────────────
   if (mode === 'qr') {
+    if (isWeb && !isSecureWebContext) {
+      return (
+        <View style={styles.container}>
+          {renderTabs()}
+          <View style={styles.center}>
+            <Text style={styles.warningTitle}>⚠️ Camera Restricted on HTTP Web</Text>
+            <Text style={styles.text}>
+              Web browsers require an HTTPS connection or localhost to access the camera.
+            </Text>
+            <TouchableOpacity style={styles.button} onPress={() => setMode('manual')}>
+              <Text style={styles.buttonText}>Use Manual Code Entry →</Text>
+            </TouchableOpacity>
+          </View>
+          {nameModal && renderNameModal()}
+        </View>
+      )
+    }
+
     if (!permission?.granted) {
       return (
         <View style={styles.container}>
@@ -265,8 +292,9 @@ const styles = StyleSheet.create({
   },
   hint: { color: '#fff', fontSize: 14, textAlign: 'center', paddingHorizontal: 32 },
 
-  // No permission
+  // No permission / web warning
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+  warningTitle: { color: '#ffbd2e', fontSize: 18, fontWeight: '700', marginBottom: 12, textAlign: 'center' },
   text: { color: '#fff', fontSize: 16, textAlign: 'center', marginBottom: 24 },
 
   // Manual entry

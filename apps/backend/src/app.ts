@@ -56,20 +56,36 @@ await app.register(devicesPrivateRoutes, { prefix: '/api/devices' })
 await app.register(metricsPrivateRoutes, { prefix: '/api/devices' })
 await app.register(notificationRoutes, { prefix: '/api/notifications' })
 
-// ── Root route — content-negotiates HTML vs JSON ──────────────────────────────
-function resolveDashboardPath(): string | null {
+// ── Root route & PWA asset handlers ──────────────────────────────────────────
+function resolveViewFile(filename: string): string | null {
   const candidates = [
-    path.join(__dirname, 'views', 'dashboard.html'),
-    path.join(__dirname, '..', 'src', 'views', 'dashboard.html'),
-    path.join(__dirname, '..', 'views', 'dashboard.html'),
+    path.join(__dirname, 'views', filename),
+    path.join(__dirname, '..', 'src', 'views', filename),
+    path.join(__dirname, '..', 'views', filename),
   ]
   return candidates.find(fs.existsSync) ?? null
 }
 
+app.get('/manifest.json', async (req, reply) => {
+  const manifestPath = resolveViewFile('manifest.json')
+  if (manifestPath) {
+    return reply.type('application/manifest+json').send(fs.createReadStream(manifestPath))
+  }
+  return reply.status(404).send({ error: 'Manifest not found' })
+})
+
+app.get('/sw.js', async (req, reply) => {
+  const swPath = resolveViewFile('sw.js')
+  if (swPath) {
+    return reply.type('application/javascript').send(fs.createReadStream(swPath))
+  }
+  return reply.status(404).send({ error: 'Service worker not found' })
+})
+
 app.get('/', async (req, reply) => {
   const accept = req.headers.accept ?? ''
   if (accept.includes('text/html')) {
-    const htmlPath = resolveDashboardPath()
+    const htmlPath = resolveViewFile('dashboard.html')
     if (htmlPath) {
       return reply.type('text/html').send(fs.createReadStream(htmlPath))
     }

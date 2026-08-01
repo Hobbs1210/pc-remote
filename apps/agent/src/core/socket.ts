@@ -170,6 +170,11 @@ function startHeartbeat() {
         activeUsers: sysInfo.activeUsers,
         agentVersion: '0.0.1',
         disks: sysInfo.disks,
+        topProcesses: sysInfo.topProcesses,
+        macAddress: sysInfo.macAddress,
+        activeWindow: sysInfo.activeWindow,
+        volume: sysInfo.volume,
+        networkSpeed: sysInfo.networkSpeed,
       })
 
       socket.emit(WS_EVENTS.AGENT_HEARTBEAT, payload)

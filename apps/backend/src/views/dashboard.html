@@ -2,35 +2,219 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b0b18" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="PC Remote Desktop Control & Management Dashboard" />
   <title>PC Remote — Admin Web Dashboard</title>
+  <link rel="manifest" href="/manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0b0b18 0%, #12122b 50%, #080811 100%);
+      --accent-purple: #6c63ff;
+      --accent-blue: #3b82f6;
+      --accent-green: #4ade80;
+      --accent-amber: #ffbd2e;
+      --card-bg: rgba(20, 20, 43, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0b0b18; color: #e2e8f0; font-family: 'Inter', sans-serif; min-height: 100vh; padding: 32px 24px; }
-    .container { max-width: 1000px; margin: 0 auto; }
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid #1e1e38; }
-    .logo-box { display: flex; align-items: center; gap: 14px; }
-    .logo-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #6c63ff, #3b82f6); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
-    h1 { font-size: 24px; font-weight: 700; color: #fff; }
-    .subtitle { color: #94a3b8; font-size: 13px; margin-top: 2px; }
-    .badge { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-    .badge-dot { width: 8px; height: 8px; background: #4ade80; border-radius: 50%; box-shadow: 0 0 8px #4ade80; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 32px; }
-    .card { background: #14142b; border: 1px solid #232342; border-radius: 16px; padding: 24px; transition: transform 0.2s, border-color 0.2s; }
-    .card:hover { border-color: #6c63ff; transform: translateY(-2px); }
-    .card-title { color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
-    .card-value { font-size: 28px; font-weight: 700; color: #fff; }
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 32px 24px;
+      line-height: 1.5;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 36px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--card-border);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .logo-box { display: flex; align-items: center; gap: 16px; }
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 8px 24px rgba(108, 99, 255, 0.3);
+    }
+    h1 { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+    .subtitle { color: var(--text-sub); font-size: 13px; margin-top: 2px; }
+
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+
+    .badge {
+      background: rgba(74, 222, 128, 0.12);
+      color: var(--accent-green);
+      border: 1px solid rgba(74, 222, 128, 0.25);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(8px);
+    }
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .pwa-install-btn {
+      display: none;
+      background: var(--accent-purple);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pwa-install-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 36px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card:hover {
+      border-color: rgba(108, 99, 255, 0.4);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title {
+      color: var(--text-sub);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-value { font-size: 32px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
     .card-desc { color: #64748b; font-size: 13px; margin-top: 6px; }
-    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .section-title { font-size: 18px; font-weight: 700; color: #fff; }
-    code { font-family: 'JetBrains Mono', monospace; background: #1e1e38; padding: 3px 8px; border-radius: 6px; font-size: 13px; color: #38bdf8; }
-    table { width: 100%; border-collapse: collapse; background: #14142b; border-radius: 16px; overflow: hidden; border: 1px solid #232342; }
-    th, td { padding: 14px 20px; text-align: left; border-bottom: 1px solid #1e1e38; font-size: 14px; }
-    th { background: #1a1a36; color: #94a3b8; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .section-title { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(30, 30, 56, 0.8);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #38bdf8;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .table-wrapper {
+      background: var(--card-bg);
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      margin-bottom: 36px;
+    }
+
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th, td { padding: 16px 24px; border-bottom: 1px solid var(--card-border); font-size: 14px; }
+    th {
+      background: rgba(26, 26, 54, 0.6);
+      color: var(--text-sub);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
     tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    .btn-test {
+      background: rgba(108, 99, 255, 0.15);
+      color: var(--accent-purple);
+      border: 1px solid rgba(108, 99, 255, 0.3);
+      padding: 6px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-test:hover {
+      background: var(--accent-purple);
+      color: #fff;
+    }
+
+    /* Response Console Drawer */
+    .console-box {
+      background: #080811;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #38bdf8;
+      max-height: 240px;
+      overflow-y: auto;
+      display: none;
+    }
+    .console-header {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-sub);
+      font-size: 12px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
   </style>
 </head>
 <body>
@@ -40,29 +224,37 @@
         <div class="logo-icon">💻</div>
         <div>
           <h1>PC Remote API Server</h1>
-          <div class="subtitle">v0.0.2 · Fastify & Socket.io Engine</div>
+          <div class="subtitle">v0.0.2 · Fastify & Socket.io Engine · Progressive Web App</div>
         </div>
       </div>
-      <div class="badge">
-        <div class="badge-dot"></div> Server Online
+      <div class="header-actions">
+        <button id="pwa-install-btn" class="pwa-install-btn">📲 Install PWA</button>
+        <div class="badge" id="server-status-badge">
+          <div class="badge-dot"></div> Server Online
+        </div>
       </div>
     </header>
 
     <div class="grid">
       <div class="card">
-        <div class="card-title">Backend Status</div>
-        <div class="card-value">Running</div>
+        <div class="card-title">Backend Status <span>🟢</span></div>
+        <div class="card-value" id="status-val">Healthy</div>
         <div class="card-desc">Port: <code>3000</code></div>
       </div>
       <div class="card">
-        <div class="card-title">Database Studio</div>
-        <div class="card-value">Prisma GUI</div>
-        <div class="card-desc">Launch with <code>pnpm --filter backend db:studio</code></div>
+        <div class="card-title">System Uptime <span>⏱️</span></div>
+        <div class="card-value" id="uptime-val">0s</div>
+        <div class="card-desc" id="timestamp-val">Live timer active</div>
       </div>
       <div class="card">
-        <div class="card-title">Mobile App & Agent</div>
+        <div class="card-title">WebSocket Signal <span>⚡</span></div>
+        <div class="card-value">Active</div>
+        <div class="card-desc">Socket.io server running</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Prisma Database <span>🗄️</span></div>
         <div class="card-value">Connected</div>
-        <div class="card-desc">WebSocket signaling active</div>
+        <div class="card-desc">Studio: <code>pnpm db:studio</code></div>
       </div>
     </div>
 
@@ -70,42 +262,124 @@
       <div class="section-title">Available API Services</div>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Endpoint</th>
-          <th>Method</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><code>/health</code></td>
-          <td>GET</td>
-          <td>Server health monitor</td>
-        </tr>
-        <tr>
-          <td><code>/api/auth/login</code></td>
-          <td>POST</td>
-          <td>User authentication</td>
-        </tr>
-        <tr>
-          <td><code>/api/devices</code></td>
-          <td>GET</td>
-          <td>List registered PC devices</td>
-        </tr>
-        <tr>
-          <td><code>/api/devices/:id/commands</code></td>
-          <td>POST</td>
-          <td>Dispatch remote commands (Shutdown, Lock, Terminal, Volume, Banner)</td>
-        </tr>
-        <tr>
-          <td><code>/api/devices/:id/wol</code></td>
-          <td>POST</td>
-          <td>Send Wake-on-LAN magic packet</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Endpoint</th>
+            <th>Method</th>
+            <th>Description</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>/health</code></td>
+            <td>GET</td>
+            <td>Server health monitor & metrics</td>
+            <td><button class="btn-test" onclick="testEndpoint('/health')">Test API</button></td>
+          </tr>
+          <tr>
+            <td><code>/api/devices</code></td>
+            <td>GET</td>
+            <td>List registered PC devices (Auth Required)</td>
+            <td><button class="btn-test" onclick="testEndpoint('/api/devices')">Test API</button></td>
+          </tr>
+          <tr>
+            <td><code>/api/notifications</code></td>
+            <td>GET</td>
+            <td>Device notifications & system alerts</td>
+            <td><button class="btn-test" onclick="testEndpoint('/api/notifications')">Test API</button></td>
+          </tr>
+          <tr>
+            <td><code>/api/auth/login</code></td>
+            <td>POST</td>
+            <td>User authentication & JWT issue</td>
+            <td><button class="btn-test" onclick="testEndpoint('/api/auth/login', 'POST')">Test API</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="console-drawer" class="console-box">
+      <div class="console-header">
+        <span id="console-target">API Response Output</span>
+        <span style="cursor:pointer" onclick="document.getElementById('console-drawer').style.display='none'">✕ Close</span>
+      </div>
+      <pre id="console-output">Select an endpoint to test payload...</pre>
+    </div>
   </div>
+
+  <script>
+    // Live Server Health Poller & Uptime Timer
+    let secondsCounter = 0;
+    setInterval(() => {
+      secondsCounter++;
+      const mins = Math.floor(secondsCounter / 60);
+      const secs = secondsCounter % 60;
+      document.getElementById('uptime-val').innerText = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    }, 1000);
+
+    async function checkHealth() {
+      try {
+        const res = await fetch('/health');
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('timestamp-val').innerText = new Date(data.timestamp).toLocaleTimeString();
+        }
+      } catch (err) {
+        document.getElementById('status-val').innerText = 'Offline';
+        document.getElementById('server-status-badge').style.borderColor = '#ef4444';
+      }
+    }
+    checkHealth();
+    setInterval(checkHealth, 15000);
+
+    // Interactive Endpoint Tester
+    async function testEndpoint(path, method = 'GET') {
+      const drawer = document.getElementById('console-drawer');
+      const target = document.getElementById('console-target');
+      const output = document.getElementById('console-output');
+
+      drawer.style.display = 'block';
+      target.innerText = `${method} ${path}`;
+      output.innerText = 'Requesting...';
+
+      try {
+        const res = await fetch(path, { method });
+        const text = await res.text();
+        try {
+          const json = JSON.parse(text);
+          output.innerText = `Status: ${res.status}\n\n` + JSON.stringify(json, null, 2);
+        } catch {
+          output.innerText = `Status: ${res.status}\n\n` + text;
+        }
+      } catch (err) {
+        output.innerText = `Error: ${err.message}`;
+      }
+    }
+
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+          console.warn('PWA ServiceWorker registration failed:', err);
+        });
+      });
+    }
+
+    // PWA Installation Prompt Listener
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const installBtn = document.getElementById('pwa-install-btn');
+      installBtn.style.display = 'inline-block';
+      installBtn.addEventListener('click', () => {
+        installBtn.style.display = 'none';
+        deferredPrompt.prompt();
+      });
+    });
+  </script>
 </body>
 </html>

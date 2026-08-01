@@ -34,9 +34,15 @@
       "themeColor": "#0f0f23",
       "backgroundColor": "#0f0f23",
       "display": "standalone",
+      "orientation": "portrait",
       "scope": "/",
       "startUrl": "/",
-      "description": "PC Remote Desktop Control & Management Dashboard"
+      "description": "PC Remote Desktop Control & Management Dashboard",
+      "splash": {
+        "image": "./assets/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0f0f23"
+      }
     },
     "plugins": [
       "expo-secure-store"

@@ -1,0 +1,22 @@
+{
+  "name": "PC Remote Admin Dashboard",
+  "short_name": "PC Remote",
+  "description": "PC Remote Desktop Control & Management Web Dashboard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0b18",
+  "theme_color": "#6c63ff",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/static/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
