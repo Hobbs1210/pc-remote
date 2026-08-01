@@ -53,13 +53,21 @@ function getTimeContext(timezone: string): TimeContext {
   return { currentMinutes, dayNumber, isWeekend }
 }
 
-export type LockReason = 'downtime' | 'allowed_hours' | 'daily_limit' | null
+export type LockReason = 'temporary_lock' | 'downtime' | 'allowed_hours' | 'daily_limit' | null
 
 // Возвращает причину блокировки или null если доступ разрешён
 export function getLockReason(): LockReason {
-  const schedule = getSchedule()
+  const schedule = getSchedule() as (ReturnType<typeof getSchedule> & { lockUntil?: string | null })
 
   if (!schedule) return null
+
+  // 0. Временная блокировка (Lock for X minutes) — наивысший приоритет
+  if (schedule.lockUntil) {
+    const lockUntilDate = new Date(schedule.lockUntil)
+    if (lockUntilDate > new Date()) {
+      return 'temporary_lock'
+    }
+  }
 
   const ctx = getTimeContext(schedule.timezone)
 

@@ -9,6 +9,7 @@ import {
   TextInput,
   ScrollView,
   Image,
+  Switch,
 } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useNavigation } from '@react-navigation/native'
@@ -147,6 +148,115 @@ export default function ControlScreen({ route }: Props) {
   const [terminalRunning, setTerminalRunning] = useState(false)
   const screenshotPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  const [schedule, setSchedule] = useState<any | null>(null)
+  const [lockModal, setLockModal] = useState(false)
+  const [lockDurationEnabled, setLockDurationEnabled] = useState(true)
+  const [lockDurationMinutes, setLockDurationMinutes] = useState('120')
+
+  const loadSchedule = async () => {
+    try {
+      const { data } = await api.get<{ schedule?: any | null }>(`/devices/${deviceId}`)
+      if (data.schedule) {
+        setSchedule(data.schedule)
+      } else {
+        setSchedule(null)
+      }
+    } catch (e) {
+      console.warn('Failed to load schedule', e)
+    }
+  }
+
+  useEffect(() => {
+    void loadSchedule()
+  }, [deviceId])
+
+  const handleToggleScheduleRestrictions = async (enable: boolean) => {
+    try {
+      const { data } = await api.get<{ schedule?: any }>(`/devices/${deviceId}`)
+      const s = data.schedule || {
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        days: {},
+        blockedApps: []
+      }
+
+      const updatedDowntime = s.downtime 
+        ? { ...s.downtime, enabled: enable } 
+        : { enabled: enable, start: '23:00', end: '07:00' }
+      const updatedDailyLimit = s.dailyLimit 
+        ? { ...s.dailyLimit, enabled: enable } 
+        : { enabled: enable, minutesWeekday: 120, minutesWeekend: 240 }
+
+      const payload = {
+        enabled: enable,
+        timezone: s.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        days: s.days || {},
+        downtime: updatedDowntime,
+        dailyLimit: updatedDailyLimit,
+        blockedApps: s.blockedApps || [],
+        lockUntil: enable ? s.lockUntil : null // clear lockUntil when disabling
+      }
+
+      await api.put(`/devices/${deviceId}/schedule`, payload)
+      
+      Alert.alert(
+        enable ? '✓ Schedule Enabled' : '✓ Schedule Disabled',
+        enable ? 'All configured schedule restrictions are now active.' : 'All schedule limits, curfews, and temporary locks are disabled.'
+      )
+      
+      void loadSchedule()
+    } catch {
+      Alert.alert('Error', 'Failed to update schedule')
+    }
+  }
+
+  const handleLockPC = async () => {
+    setLockModal(false)
+    
+    let lockUntilStr: string | null = null
+    if (lockDurationEnabled) {
+      const mins = parseInt(lockDurationMinutes)
+      if (isNaN(mins) || mins <= 0) {
+        Alert.alert('Error', 'Please enter a valid lock duration in minutes.')
+        return
+      }
+      lockUntilStr = new Date(Date.now() + mins * 60 * 1000).toISOString()
+    }
+
+    try {
+      // 1. Send the lock command
+      await sendCommand(deviceId, 'LOCK', 0)
+
+      // 2. If duration is enabled, update the schedule with lockUntil
+      if (lockDurationEnabled && lockUntilStr) {
+        const { data } = await api.get<{ schedule?: any }>(`/devices/${deviceId}`)
+        const s = data.schedule || {
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          days: {},
+          blockedApps: []
+        }
+
+        const payload = {
+          enabled: s.enabled ?? false,
+          timezone: s.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+          days: s.days || {},
+          downtime: s.downtime || { enabled: false, start: '23:00', end: '07:00' },
+          dailyLimit: s.dailyLimit || { enabled: false, minutesWeekday: 120, minutesWeekend: 240 },
+          blockedApps: s.blockedApps || [],
+          lockUntil: lockUntilStr
+        }
+
+        await api.put(`/devices/${deviceId}/schedule`, payload)
+        Alert.alert('✓ Command Sent', `PC will lock immediately and remain restricted for ${lockDurationMinutes} minutes.`)
+      } else {
+        Alert.alert('✓ Command Sent', 'PC will lock immediately.')
+      }
+
+      void loadSchedule()
+    } catch {
+      Alert.alert('Error', 'Failed to send lock command')
+    }
+  }
+
   const handleUpdateAgent = () => {
     Alert.alert(
       'Update Agent',
@@ -271,6 +381,7 @@ export default function ControlScreen({ route }: Props) {
     try {
       await api.post(`/devices/${deviceId}/schedule/bonus`, { minutes })
       Alert.alert('✓ Bonus Added', `+${minutes} min added to daily limit`)
+      void loadSchedule()
     } catch {
       Alert.alert('Error', 'Failed to add bonus time')
     }
@@ -382,7 +493,7 @@ export default function ControlScreen({ route }: Props) {
           label="Lock"
           emoji="🔒"
           color="#6c63ff"
-          onPress={() => void executeCommand('LOCK', 0)}
+          onPress={() => setLockModal(true)}
         />
         <CommandButton
           label="Sleep"
@@ -444,6 +555,36 @@ export default function ControlScreen({ route }: Props) {
           onPress={handleUpdateAgent}
         />
       </View>
+
+      {/* Schedule Status & Control */}
+      <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Schedule Status</Text>
+      {schedule && (schedule.enabled || schedule.downtime?.enabled || schedule.dailyLimit?.enabled || (schedule.lockUntil && new Date(schedule.lockUntil) > new Date())) ? (
+        <TouchableOpacity
+          style={[styles.scheduleToggleBtn, styles.scheduleActiveBtn]}
+          onPress={() => void handleToggleScheduleRestrictions(false)}
+        >
+          <Text style={styles.scheduleToggleEmoji}>🔓</Text>
+          <View style={styles.scheduleToggleTextContainer}>
+            <Text style={styles.scheduleToggleTitleActive}>Disable Schedule Restrictions</Text>
+            <Text style={styles.scheduleToggleSubActive}>
+              {schedule.lockUntil && new Date(schedule.lockUntil) > new Date()
+                ? `Temporarily locked until ${new Date(schedule.lockUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                : 'Schedule rules or limits are currently active'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          style={[styles.scheduleToggleBtn, styles.scheduleDisabledBtn]}
+          onPress={() => void handleToggleScheduleRestrictions(true)}
+        >
+          <Text style={styles.scheduleToggleEmoji}>🗓️</Text>
+          <View style={styles.scheduleToggleTextContainer}>
+            <Text style={styles.scheduleToggleTitle}>Enable Schedule Restrictions</Text>
+            <Text style={styles.scheduleToggleSub}>All curfews, daily limits, and hours are inactive</Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
 
 
@@ -521,6 +662,65 @@ export default function ControlScreen({ route }: Props) {
         <Text style={styles.scheduleBtnText}>Schedule Settings</Text>
         <Text style={styles.scheduleArrow}>›</Text>
       </TouchableOpacity>
+
+      {/* Lock Duration & Confirmation Modal */}
+      <Modal visible={lockModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={styles.modalTitle}>🔒 Lock Workstation</Text>
+              <TouchableOpacity onPress={() => setLockModal(false)}>
+                <Text style={{ color: '#888', fontSize: 18 }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.lockWarningBox}>
+              <Text style={styles.lockWarningText}>
+                ⚠️ <Text style={{ fontWeight: '700' }}>Important Notice:</Text> Windows security prevents remote unlocking. You must physically enter the password/PIN on the PC to unlock it.
+              </Text>
+            </View>
+
+            <View style={styles.toggleRow}>
+              <Text style={{ color: '#fff', fontSize: 15 }}>Lock for a specific duration</Text>
+              <Switch
+                value={lockDurationEnabled}
+                onValueChange={setLockDurationEnabled}
+                trackColor={{ false: '#333', true: '#6c63ff' }}
+                thumbColor="#fff"
+              />
+            </View>
+
+            {lockDurationEnabled && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={{ color: '#888', fontSize: 12, marginBottom: 6 }}>DURATION (MINUTES)</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={lockDurationMinutes}
+                  onChangeText={setLockDurationMinutes}
+                  keyboardType="number-pad"
+                  placeholder="Minutes (e.g. 120)"
+                  placeholderTextColor="#666"
+                />
+              </View>
+            )}
+
+            <View style={[styles.modalButtons, { marginTop: 16 }]}>
+              <TouchableOpacity
+                style={styles.modalCancel}
+                onPress={() => setLockModal(false)}
+              >
+                <Text style={{ color: '#888' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirm, { backgroundColor: '#ef4444' }]}
+                onPress={() => void handleLockPC()}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Lock PC</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Screenshot Modal */}
       <Modal visible={screenshotModal} transparent animationType="fade">
@@ -867,4 +1067,61 @@ const styles = StyleSheet.create({
   },
   diskBarFill: { height: '100%', borderRadius: 3 },
   diskText: { color: '#666', fontSize: 12, width: 80, textAlign: 'right' },
+  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  scheduleToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  scheduleActiveBtn: {
+    backgroundColor: 'rgba(49, 46, 129, 0.4)',
+    borderColor: '#4f46e5',
+  },
+  scheduleDisabledBtn: {
+    backgroundColor: '#121225',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  scheduleToggleEmoji: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  scheduleToggleTextContainer: {
+    flex: 1,
+  },
+  scheduleToggleTitleActive: {
+    color: '#34d399',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  scheduleToggleSubActive: {
+    color: '#a5b4fc',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  scheduleToggleTitle: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  scheduleToggleSub: {
+    color: '#666',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  lockWarningBox: {
+    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 16,
+  },
+  lockWarningText: {
+    color: '#fef3c7',
+    fontSize: 12,
+    lineHeight: 18,
+  },
 })

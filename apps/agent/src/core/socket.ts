@@ -119,6 +119,9 @@ export async function connectToServer(tokenOverride?: string): Promise<void> {
     logger.info('Schedule update received')
     import('../schedule/store.js').then(({ updateSchedule }) => {
       updateSchedule(payload)
+      import('../schedule/enforcer.js').then(({ startEnforcer }) => {
+        startEnforcer()
+      }).catch(() => {})
     }).catch((err) => logger.error({ err }, 'Failed to update schedule'))
   })
 

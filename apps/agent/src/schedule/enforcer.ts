@@ -25,7 +25,9 @@ function setLoginNotice(reason: LockReason) {
         ? 'Curfew is active. Access to PC is restricted at this time.'
         : reason === 'daily_limit'
           ? 'Daily screen time limit reached.'
-          : 'Access to PC is restricted at this time of day.'
+          : reason === 'temporary_lock'
+            ? 'PC is temporarily locked by administrator.'
+            : 'Access to PC is restricted at this time of day.'
 
       execSync(`reg add "${WINLOGON_KEY}" /v LegalNoticeCaption /t REG_SZ /d "${caption}" /f`, { stdio: 'ignore' })
       execSync(`reg add "${WINLOGON_KEY}" /v LegalNoticeText /t REG_SZ /d "${text}" /f`, { stdio: 'ignore' })
@@ -47,7 +49,9 @@ function lockSession(reason: LockReason) {
     ? 'Curfew Active: logging off session'
     : reason === 'daily_limit'
       ? 'Daily limit reached: PC will be locked'
-      : 'Access restricted: PC will be locked'
+      : reason === 'temporary_lock'
+        ? 'PC temporarily locked by administrator'
+        : 'Access restricted: PC will be locked'
 
   // downtime → full logoff, others → screen lock
   const logoff = reason === 'downtime'
