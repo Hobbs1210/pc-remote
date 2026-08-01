@@ -132,7 +132,7 @@ export default function ControlScreen({ route }: Props) {
 
   useEffect(() => {
     void fetchLocalUsers(deviceId)
-  }, [deviceId])
+  }, [deviceId, fetchLocalUsers])
 
   const [delayModal, setDelayModal] = useState(false)
   const [pendingCommand, setPendingCommand] = useState<string | null>(null)
@@ -179,12 +179,13 @@ export default function ControlScreen({ route }: Props) {
         blockedApps: []
       }
 
+      // Bug #18 fix: preserve existing sub-feature enable states rather than overwriting them with master toggle
       const updatedDowntime = s.downtime 
-        ? { ...s.downtime, enabled: enable } 
-        : { enabled: enable, start: '23:00', end: '07:00' }
+        ? { ...s.downtime } 
+        : { enabled: true, start: '23:00', end: '07:00' }
       const updatedDailyLimit = s.dailyLimit 
-        ? { ...s.dailyLimit, enabled: enable } 
-        : { enabled: enable, minutesWeekday: 120, minutesWeekend: 240 }
+        ? { ...s.dailyLimit } 
+        : { enabled: true, minutesWeekday: 120, minutesWeekend: 240 }
 
       const payload = {
         enabled: enable,

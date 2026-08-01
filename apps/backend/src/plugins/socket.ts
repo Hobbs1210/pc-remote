@@ -30,6 +30,8 @@ type AgentSocket = Socket<AgentToServerEvents, ServerToAgentEvents, InterServerE
 const screenshotCache = new Map<string, { image: string; capturedAt: string }>()
 
 const SCREENSHOT_TTL_MS = 10 * 60 * 1000 // 10 minutes
+// Bug #15 fix: cap cache size to prevent unbounded memory growth
+const MAX_CACHED_SCREENSHOTS = 50
 
 const socketPlugin = fp(async (app: FastifyInstance) => {
   const socketService = new SocketService(app.prisma as PrismaClient)
@@ -115,6 +117,11 @@ const socketPlugin = fp(async (app: FastifyInstance) => {
       const image = payload['image'] as string | undefined
       if (image) {
         const now = new Date()
+        // Bug #15: evict oldest entry if cache is full
+        if (screenshotCache.size >= MAX_CACHED_SCREENSHOTS && !screenshotCache.has(deviceId)) {
+          const oldestKey = screenshotCache.keys().next().value
+          if (oldestKey) screenshotCache.delete(oldestKey)
+        }
         screenshotCache.set(deviceId, { image, capturedAt: now.toISOString() })
         app.log.info({ deviceId }, 'Screenshot cached')
         void socketService.handleScreenshot(deviceId, image, now)

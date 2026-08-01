@@ -87,8 +87,9 @@ export class SocketService {
         where: { deviceId_date: { deviceId, date: today } },
       })
       const appUsageMap = (currentDaily?.appUsage as Record<string, number> | null) ?? {}
+      // Bug #12 fix: heartbeat fires every 30 seconds, so each tick = 0.5 minutes
       if (activeAppName) {
-        appUsageMap[activeAppName] = (appUsageMap[activeAppName] ?? 0) + 1
+        appUsageMap[activeAppName] = (appUsageMap[activeAppName] ?? 0) + 0.5
       }
       await Promise.all([
         this.prisma.deviceMetric.create({
@@ -104,11 +105,11 @@ export class SocketService {
           create: {
             deviceId,
             date: today,
-            activeMinutes: 1,
+            activeMinutes: 0.5,
             appUsage: appUsageMap as Prisma.InputJsonValue,
           },
           update: {
-            activeMinutes: { increment: 1 },
+            activeMinutes: { increment: 0.5 },
             appUsage: appUsageMap as Prisma.InputJsonValue,
           },
         }),

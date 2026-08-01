@@ -51,8 +51,12 @@ export async function waitForBind(): Promise<void> {
   return new Promise((resolve) => {
     const poll = setInterval(async () => {
       try {
+        // Bug #6 fix: pass secret to authenticate token retrieval
+        const secret = config.secret
+        if (!secret) return
         const response = await axios.get<{ agentToken: string | null }>(
-          `${config.serverUrl}/api/devices/${config.deviceId}/token`
+          `${config.serverUrl}/api/devices/${config.deviceId}/token`,
+          { params: { secret } }
         )
 
         const token = response.data.agentToken

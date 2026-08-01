@@ -423,13 +423,19 @@ export class DevicesService {
     return { version, downloadUrl, delivered: result.delivered }
   }
 
-  async getAgentToken(deviceId: string) {
+  // Bug #6 fix: verify device secret before exposing agentToken
+  async getAgentToken(deviceId: string, secret: string) {
     const device = await this.prisma.device.findUnique({
       where: { id: deviceId },
-      select: { agentToken: true },
+      select: { agentToken: true, secret: true },
     })
 
     if (!device) throw new DeviceError('Device not found', 404, 'DEVICE_NOT_FOUND')
+
+    // Verify the secret matches the hashed secret stored during initDevice
+    const secretValid = await bcrypt.compare(secret, device.secret)
+    if (!secretValid) throw new DeviceError('Invalid secret', 403, 'INVALID_SECRET')
+
     return { agentToken: device.agentToken ?? null }
   }
 

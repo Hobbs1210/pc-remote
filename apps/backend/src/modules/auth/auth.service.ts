@@ -39,9 +39,9 @@ export class AuthService {
       where: { email: input.email },
     })
 
-    // Всегда выполняем bcrypt.compare, даже если юзер не найден
-    // Иначе timing attack позволяет определить существование email
-    const passwordHash = user?.passwordHash ?? '$2b$12$invalidhashfortimingprotection'
+    // Bug #19 fix: use a valid pre-computed bcrypt hash so compare() does a full comparison
+    // (the original string was not a valid hash and would be rejected immediately, defeating timing protection)
+    const passwordHash = user?.passwordHash ?? '$2b$12$K4v4Y3GQz6YFJqm3nZHDYexMRPFy0v5x2UoYHJqHMqR3w8hOdcUe6'
     const valid = await bcrypt.compare(input.password, passwordHash)
 
     if (!user || !valid) {

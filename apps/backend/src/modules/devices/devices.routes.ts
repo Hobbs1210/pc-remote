@@ -11,9 +11,14 @@ import {
 const devicesPublicRoutes: FastifyPluginAsync = async (app) => {
   const service = new DevicesService(app.prisma, app)
 
-  app.get<{ Params: { id: string } }>('/:id/token', async (request, reply) => {
+  // Bug #6 fix: require secret query param to prevent unauthenticated token leakage
+  app.get<{ Params: { id: string }; Querystring: { secret?: string } }>('/:id/token', async (request, reply) => {
+    const secret = request.query.secret
+    if (!secret) {
+      return reply.status(400).send({ error: 'secret query parameter required' })
+    }
     try {
-      const result = await service.getAgentToken(request.params.id)
+      const result = await service.getAgentToken(request.params.id, secret)
       return reply.send(result)
     } catch (err) {
       if (err instanceof DeviceError) {

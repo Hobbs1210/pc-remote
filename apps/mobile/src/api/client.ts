@@ -79,8 +79,12 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${data.accessToken}`
         return api(original)
       } catch {
+        // Bug #11 fix: clear tokens AND set isAuthenticated = false
         await storage.deleteItem('accessToken')
         await storage.deleteItem('refreshToken')
+        // Dynamically import to avoid circular deps, then force logout state
+        const { useAuthStore } = await import('../store/auth')
+        useAuthStore.setState({ isAuthenticated: false })
       }
     }
     return Promise.reject(error)
