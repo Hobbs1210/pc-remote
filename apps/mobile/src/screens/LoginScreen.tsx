@@ -36,13 +36,9 @@ export default function LoginScreen() {
       } else {
         await login(email, password)
       }
-    } catch {
-      Alert.alert(
-        'Error',
-        isRegister
-          ? 'Registration failed'
-          : 'Invalid email or password'
-      )
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred'
+      Alert.alert(isRegister ? 'Registration Failed' : 'Sign In Failed', message)
     } finally {
       setLoading(false)
     }

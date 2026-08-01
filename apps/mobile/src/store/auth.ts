@@ -1,6 +1,27 @@
 import { create } from 'zustand'
 import { storage } from '../utils/storage'
 import { api } from '../api/client'
+import axios from 'axios'
+
+/** Pulls a human-readable message out of a Zod / AuthError API response */
+function extractApiError(err: unknown): string {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as Record<string, unknown> | undefined
+    if (data) {
+      // Zod field errors: { error: { fieldErrors: { password: ['...'] } } }
+      const fieldErrors = (data.error as Record<string, unknown>)?.fieldErrors as
+        | Record<string, string[]>
+        | undefined
+      if (fieldErrors) {
+        const messages = Object.values(fieldErrors).flat()
+        if (messages.length) return messages.join('\n')
+      }
+      // AuthError: { error: 'Invalid credentials' }
+      if (typeof data.error === 'string') return data.error
+    }
+  }
+  return 'An unexpected error occurred'
+}
 
 interface AuthState {
   isAuthenticated: boolean
@@ -21,17 +42,25 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   login: async (email, password) => {
-    const { data } = await api.post('/auth/login', { email, password })
-    await storage.setItem('accessToken', data.accessToken)
-    await storage.setItem('refreshToken', data.refreshToken)
-    set({ isAuthenticated: true })
+    try {
+      const { data } = await api.post('/auth/login', { email, password })
+      await storage.setItem('accessToken', data.accessToken)
+      await storage.setItem('refreshToken', data.refreshToken)
+      set({ isAuthenticated: true })
+    } catch (err) {
+      throw new Error(extractApiError(err))
+    }
   },
 
   register: async (email, password) => {
-    const { data } = await api.post('/auth/register', { email, password })
-    await storage.setItem('accessToken', data.accessToken)
-    await storage.setItem('refreshToken', data.refreshToken)
-    set({ isAuthenticated: true })
+    try {
+      const { data } = await api.post('/auth/register', { email, password })
+      await storage.setItem('accessToken', data.accessToken)
+      await storage.setItem('refreshToken', data.refreshToken)
+      set({ isAuthenticated: true })
+    } catch (err) {
+      throw new Error(extractApiError(err))
+    }
   },
 
   logout: async () => {
