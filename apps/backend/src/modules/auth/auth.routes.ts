@@ -9,7 +9,7 @@ import {
 const authRoutes: FastifyPluginAsync = async (app) => {
   const authService = new AuthService(app.prisma, app)
 
-  app.post('/register', async (request, reply) => {
+  app.post('/register', { config: { rateLimit: { max: 10, timeWindow: '1 hour' } } }, async (request, reply) => {
     const body = RegisterSchema.safeParse(request.body)
     if (!body.success) {
       return reply.status(400).send({ error: body.error.flatten() })
@@ -26,7 +26,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     }
   })
 
-  app.post('/login', async (request, reply) => {
+  app.post('/login', { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (request, reply) => {
     const body = LoginSchema.safeParse(request.body)
     if (!body.success) {
       return reply.status(400).send({ error: body.error.flatten() })
