@@ -4,7 +4,7 @@ import { setPendingLock, setPendingNotification } from '../local-server.js'
 import { getLockReason, getMinutesRemainingToday } from './checker.js'
 import { incrementUsage } from './tracker.js'
 import { getSchedule } from './store.js'
-import { getActiveUsers } from '../utils/sysinfo.js'
+import { getActiveUsers, killProcessByName } from '../utils/sysinfo.js'
 import type { LockReason } from './checker.js'
 
 const CHECK_INTERVAL_MS = 60_000 // проверяем каждую минуту
@@ -63,7 +63,6 @@ function hasActiveSession(): boolean {
   return users.some((u) => u.state === 'Active')
 }
 
-import { killProcessByName } from '../utils/sysinfo.js'
 
 function checkBlockedApps(blockedApps?: string[]) {
   if (!blockedApps || blockedApps.length === 0) return
@@ -101,14 +100,20 @@ export function startEnforcer() {
       return
     }
 
-    // Notifications: remaining screen time warnings (5 and 1 minute)
+    // Bug #13 fix: use range checks with flags to avoid missing notifications due to timing jitter
     const remaining = getMinutesRemainingToday()
-    if (remaining === 5) {
+    if (remaining !== null && remaining <= 5 && remaining > 1 && !notified5min) {
+      notified5min = true
       setPendingNotification('5 minutes of screen time remaining')
       logger.warn({ remaining }, 'Daily limit: 5 min remaining')
-    } else if (remaining === 1) {
+    } else if (remaining !== null && remaining <= 1 && remaining > 0 && !notified1min) {
+      notified1min = true
       setPendingNotification('1 minute of screen time remaining')
       logger.warn({ remaining }, 'Daily limit: 1 min remaining')
+    } else if (remaining === null || remaining > 5) {
+      // Reset flags when limit is cleared or time refilled (e.g., bonus time)
+      notified5min = false
+      notified1min = false
     }
   }
 
