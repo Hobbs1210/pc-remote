@@ -9,6 +9,9 @@ import type { LockReason } from './checker.js'
 
 const CHECK_INTERVAL_MS = 60_000 // проверяем каждую минуту
 let enforcerTimer: NodeJS.Timeout | null = null
+// Bug #13: flags to avoid duplicate notifications
+let notified5min = false
+let notified1min = false
 
 const WINLOGON_KEY = 'HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon'
 
