@@ -16,13 +16,11 @@ function resolveViewsDir(): string {
     path.join(__dirname, '..', 'src', 'views'),
     path.join(__dirname, '..', 'views'),
   ]
-  for (const p of candidates) {
-    if (fs.existsSync(p)) return p
-  }
-  return candidates[0] // fallback — @fastify/static will log a warning if missing
+  // Return first existing path, or the first candidate as fallback
+  return candidates.find((p) => fs.existsSync(p)) ?? candidates[0]!
 }
 
-export default fp(async function staticPlugin(app: FastifyInstance) {
+const staticPlugin = fp(async function (app: FastifyInstance) {
   await app.register(fastifyStatic, {
     root: resolveViewsDir(),
     prefix: '/static/',
@@ -34,3 +32,5 @@ export default fp(async function staticPlugin(app: FastifyInstance) {
     lastModified: true,
   })
 })
+
+export default staticPlugin
