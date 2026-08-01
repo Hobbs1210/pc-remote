@@ -8,12 +8,22 @@ import rateLimitPlugin from './plugins/rate-limit.js'
 import compressPlugin from './plugins/compress.js'
 import sensiblePlugin from './plugins/sensible.js'
 import underPressurePlugin from './plugins/under-pressure.js'
+import requestContextPlugin from './plugins/request-context.js'
+import staticPlugin from './plugins/static.js'
 import socketPlugin from './plugins/socket.js'
 import authRoutes from './modules/auth/auth.routes.js'
 import {
   devicesPublicRoutes,
   devicesPrivateRoutes,
 } from './modules/devices/devices.routes.js'
+import { metricsPrivateRoutes } from './modules/metrics/metrics.routes.js'
+import { notificationRoutes } from './modules/notifications/notifications.routes.js'
+import { MetricsService } from './modules/metrics/metrics.service.js'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import fs from 'node:fs'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const app = Fastify({
   logger: {
@@ -23,6 +33,8 @@ const app = Fastify({
       : {}),
   },
 })
+
+// ── Infrastructure plugins ────────────────────────────────────────────────────
 await app.register(prismaPlugin)
 await app.register(jwtPlugin)
 await app.register(corsPlugin)
@@ -31,48 +43,37 @@ await app.register(rateLimitPlugin)
 await app.register(compressPlugin)
 await app.register(sensiblePlugin)
 await app.register(underPressurePlugin)
+await app.register(requestContextPlugin)
+await app.register(staticPlugin)
 await app.register(socketPlugin)
 
-import { metricsPrivateRoutes } from './modules/metrics/metrics.routes.js'
-import { notificationRoutes } from './modules/notifications/notifications.routes.js'
-import { MetricsService } from './modules/metrics/metrics.service.js'
-
+// ── API routes ────────────────────────────────────────────────────────────────
 await app.register(authRoutes, { prefix: '/api/auth' })
 await app.register(devicesPublicRoutes, { prefix: '/api/devices' })
 await app.register(devicesPrivateRoutes, { prefix: '/api/devices' })
 await app.register(metricsPrivateRoutes, { prefix: '/api/devices' })
 await app.register(notificationRoutes, { prefix: '/api/notifications' })
 
-import fs from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-let dashboardHtmlCache: string | null = null
-
-function getDashboardHtml(): string {
-  if (!dashboardHtmlCache || process.env.NODE_ENV === 'development') {
-    const candidatePaths = [
-      path.join(__dirname, 'views', 'dashboard.html'),
-      path.join(__dirname, '..', 'src', 'views', 'dashboard.html'),
-      path.join(__dirname, '..', 'views', 'dashboard.html'),
-    ]
-
-    for (const p of candidatePaths) {
-      if (fs.existsSync(p)) {
-        dashboardHtmlCache = fs.readFileSync(p, 'utf-8')
-        break
-      }
-    }
-  }
-  return dashboardHtmlCache ?? '<html><body><h1>PC Remote API Server</h1><p>Server online</p></body></html>'
+// ── Root route — content-negotiates HTML vs JSON ──────────────────────────────
+function resolveDashboardPath(): string | null {
+  const candidates = [
+    path.join(__dirname, 'views', 'dashboard.html'),
+    path.join(__dirname, '..', 'src', 'views', 'dashboard.html'),
+    path.join(__dirname, '..', 'views', 'dashboard.html'),
+  ]
+  return candidates.find(fs.existsSync) ?? null
 }
 
 app.get('/', async (req, reply) => {
   const accept = req.headers.accept ?? ''
   if (accept.includes('text/html')) {
-    reply.type('text/html').send(getDashboardHtml())
-    return
+    const htmlPath = resolveDashboardPath()
+    if (htmlPath) {
+      return reply.type('text/html').send(fs.createReadStream(htmlPath))
+    }
+    return reply
+      .type('text/html')
+      .send('<html><body><h1>PC Remote API Server</h1><p>Server online</p></body></html>')
   }
 
   return {
@@ -83,13 +84,12 @@ app.get('/', async (req, reply) => {
   }
 })
 
-
 app.get('/health', async () => ({
   status: 'ok',
   timestamp: new Date().toISOString(),
 }))
 
-
+// ── Server lifecycle ──────────────────────────────────────────────────────────
 const start = async () => {
   try {
     await app.listen({
