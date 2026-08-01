@@ -112,7 +112,7 @@ export function startLocalServer() {
       try {
         const bindData = JSON.stringify({ deviceId: config.deviceId, secret: state.secret })
         const svg = await QRCode.toString(bindData, { type: 'svg', width: 256 })
-        res.end(qrHtml(svg, config.deviceId))
+        res.end(qrHtml(svg, config.deviceId, state.secret))
       } catch {
         res.writeHead(500)
         res.end('QR generation failed')
@@ -282,13 +282,44 @@ const style = `
     padding:8px 16px;border-radius:8px;word-break:break-all;max-width:320px;text-align:center}
 `
 
-function qrHtml(svg: string, deviceId: string) {
+function qrHtml(svg: string, deviceId: string, secret: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>PC Remote — QR</title><style>${style}</style></head><body>
+<title>PC Remote — QR</title><style>${style}
+  .field-row{display:flex;align-items:center;gap:8px;width:100%;max-width:360px}
+  .copy-field{font-family:monospace;font-size:12px;color:#6c63ff;background:#1a1a2e;
+    padding:8px 12px;border-radius:8px;word-break:break-all;flex:1;text-align:left;border:1px solid #333}
+  .copy-btn{background:#6c63ff;color:#fff;border:none;border-radius:8px;padding:8px 12px;
+    cursor:pointer;font-size:12px;white-space:nowrap}
+  .copy-btn:active{opacity:0.7}
+  .divider{color:#555;font-size:12px;margin:4px 0}
+  .hint-box{background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:16px;
+    max-width:360px;width:100%;text-align:left}
+  .hint-box h3{margin:0 0 8px;font-size:14px;color:#aaa;font-weight:600}
+  .hint-box p{margin:0;font-size:12px;color:#666;line-height:1.6}
+</style></head><body>
 <h2>Scan QR Code</h2>
 <div class="box">${svg}</div>
-<p>Open the mobile application &rarr; Add Device</p>
-<div class="id">${deviceId}</div>
+<p>Open the mobile app → Devices → <strong>+</strong> → Scan QR</p>
+
+<div style="color:#888;font-size:13px;margin:8px 0">— or enter manually —</div>
+
+<div class="hint-box">
+  <h3>📋 Manual Entry</h3>
+  <p>App → Add Device → Enter Code tab</p>
+</div>
+
+<p style="font-size:12px;color:#888;margin:8px 0 4px">Device ID</p>
+<div class="field-row">
+  <div class="copy-field" id="did">${deviceId}</div>
+  <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('did').textContent);this.textContent='✓ Copied'">Copy</button>
+</div>
+
+<p style="font-size:12px;color:#888;margin:12px 0 4px">Secret</p>
+<div class="field-row">
+  <div class="copy-field" id="sec">${secret}</div>
+  <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('sec').textContent);this.textContent='✓ Copied'">Copy</button>
+</div>
+
 <script>setInterval(()=>fetch('/status').then(r=>r.json()).then(d=>{
   if(d.bound&&!d.secret)location.reload()
 }),3000)</script>
