@@ -56,7 +56,7 @@ const queuePlugin = fp(async (app: FastifyInstance) => {
           error: `Command delivery timed out (Device offline for > ${Math.round(timeout / 60000)} minutes)`,
         },
       })
-      app.log.warn({ commandId: payload.commandId, deviceId }, 'Command delivery timed out after 15m')
+      app.log.warn({ commandId: payload.commandId, deviceId }, `Command delivery timed out after ${Math.round(timeout / 60000)}m`)
       return
     }
 

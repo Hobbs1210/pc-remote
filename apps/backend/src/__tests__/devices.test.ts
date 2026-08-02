@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { api, BASE, registerUser } from './helpers.js'
+import { api, getBaseUrl, registerUser } from './helpers.js'
 import { randomUUID } from 'crypto'
 import { io as socketClient } from 'socket.io-client'
 
@@ -342,8 +342,9 @@ describe('Devices API', () => {
         { name: 'RemoteUser', session: 'rdp', state: 'Active', idle: '5m', logonTime: '09:30 AM' },
       ]
 
+      const baseUrl = await getBaseUrl()
       await new Promise<void>((resolve, reject) => {
-        const socket = socketClient(`${BASE}/agents`, {
+        const socket = socketClient(`${baseUrl}/agents`, {
           auth: { token: agentToken },
           transports: ['websocket'],
         })

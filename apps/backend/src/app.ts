@@ -26,6 +26,24 @@ import fs from 'node:fs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+function readPackageVersion(): string {
+  try {
+    const candidates = [
+      path.join(__dirname, '..', 'package.json'),
+      path.join(__dirname, '..', '..', 'package.json'),
+    ]
+    for (const p of candidates) {
+      if (fs.existsSync(p)) {
+        const pkg = JSON.parse(fs.readFileSync(p, 'utf-8')) as { version?: string }
+        if (pkg.version) return pkg.version
+      }
+    }
+  } catch {}
+  return '0.0.22'
+}
+
+const APP_VERSION = readPackageVersion()
+
 const app = Fastify({
   requestTimeout: 30000,
   connectionTimeout: 30000,
@@ -100,7 +118,7 @@ app.get('/', async (req, reply) => {
   return {
     name: 'PC Remote Backend API',
     status: 'ok',
-    version: '0.0.2',
+    version: APP_VERSION,
     health: '/health',
   }
 })

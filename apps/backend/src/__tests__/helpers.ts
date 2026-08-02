@@ -1,10 +1,8 @@
 import { app } from '../app.js'
 
-export const BASE = 'http://127.0.0.1:3000'
-
 let serverBaseUrl: string | null = null
 
-async function getBaseUrl(): Promise<string> {
+export async function getBaseUrl(): Promise<string> {
   if (serverBaseUrl) return serverBaseUrl
   try {
     serverBaseUrl = await app.listen({ port: 0, host: '127.0.0.1' })

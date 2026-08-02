@@ -9,6 +9,7 @@ import { NotificationsService } from '../modules/notifications/notifications.ser
 
 export class SocketService {
   private notificationsService: NotificationsService
+  private rdpAlertedDevices = new Set<string>()
 
   constructor(private prisma: PrismaClient) {
     this.notificationsService = new NotificationsService(prisma)
@@ -84,19 +85,25 @@ export class SocketService {
 
     const rdpUser = activeUsers?.find((u) => u.session === 'rdp' && u.state === 'Active')
     if (rdpUser) {
-      const device = await this.prisma.device.findUnique({
-        where: { id: deviceId },
-        select: { userId: true, name: true },
-      })
-      if (device?.userId) {
-        this.notificationsService.notifyUser(
-          device.userId,
-          'security.rdp_session',
-          '⚠️ Remote Session Alert',
-          `Active RDP remote desktop session detected on "${device.name}" (User: ${rdpUser.name})`,
-          { deviceId, user: rdpUser.name, session: rdpUser.session }
-        ).catch(() => {})
+      if (!this.rdpAlertedDevices.has(deviceId)) {
+        this.rdpAlertedDevices.add(deviceId)
+        const device = await this.prisma.device.findUnique({
+          where: { id: deviceId },
+          select: { userId: true, name: true },
+        })
+        if (device?.userId) {
+          this.notificationsService.notifyUser(
+            device.userId,
+            'security.rdp_session',
+            '⚠️ Remote Session Alert',
+            `Active RDP remote desktop session detected on "${device.name}" (User: ${rdpUser.name})`,
+            { deviceId, user: rdpUser.name, session: rdpUser.session }
+          ).catch(() => {})
+        }
       }
+    } else {
+      // Clear debounce flag when no RDP session is active
+      this.rdpAlertedDevices.delete(deviceId)
     }
 
     try {

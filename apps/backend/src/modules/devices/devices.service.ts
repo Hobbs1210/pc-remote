@@ -60,7 +60,7 @@ function getPackageVersion(): string {
       if (pkg.version) return `v${pkg.version}`
     }
   } catch {}
-  return 'v0.0.2'
+  return 'v0.0.22'
 }
 
 const DEFAULT_AGENT_VERSION = getPackageVersion()

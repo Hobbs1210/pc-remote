@@ -340,7 +340,7 @@ export function getActiveWindow(): ActiveWindow | undefined {
     `
     const output = execSync(
       `powershell.exe -NonInteractive -NoProfile -Command "${script.replace(/\n/g, ' ')}"`,
-      { encoding: 'utf-8', windowsHide: true }
+      { encoding: 'utf-8', timeout: 5000, windowsHide: true }
     )
     if (!output.trim()) return undefined
     const parsed = JSON.parse(output.trim()) as { title?: string; processName?: string; pid?: number; url?: string; browserName?: string }
@@ -503,7 +503,7 @@ export function getNetworkSpeed(): { rxKbps: number; txKbps: number } {
 
 export function getInstalledSoftware(): Array<{ name: string; version?: string; publisher?: string }> {
   if (process.platform !== 'win32') {
-    return [{ name: 'PC Remote Agent', version: '0.0.2', publisher: 'PC Remote' }]
+    return [{ name: 'PC Remote Agent', version: '0.0.22', publisher: 'PC Remote' }]
   }
 
   try {

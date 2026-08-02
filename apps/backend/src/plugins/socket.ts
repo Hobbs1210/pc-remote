@@ -175,28 +175,18 @@ const socketPlugin = fp(async (app: FastifyInstance) => {
   })
   app.decorate('io', io)
 
-  // Задача: чистить устаревшие скриншоты и помечать устройства как "away"
-  const staleCheckInterval = setInterval(async () => {
+  // Задача: чистить устаревшие скриншоты
+  const screenshotCleanupInterval = setInterval(() => {
     const now = Date.now()
     for (const [id, cached] of screenshotCache.entries()) {
       if (now - new Date(cached.capturedAt).getTime() > SCREENSHOT_TTL_MS) {
         screenshotCache.delete(id)
       }
     }
-
-    const twoMinutesAgo = new Date(now - 2 * 60 * 1000)
-
-    await (app.prisma as PrismaClient).device.updateMany({
-      where: {
-        status: 'online',
-        lastSeenAt: { lt: twoMinutesAgo },
-      },
-      data: { status: 'away' },
-    })
   }, 30_000)
 
   app.addHook('onClose', () => {
-    clearInterval(staleCheckInterval)
+    clearInterval(screenshotCleanupInterval)
     io.close()
   })
 })

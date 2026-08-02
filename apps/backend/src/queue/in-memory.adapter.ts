@@ -53,19 +53,7 @@ export class InMemoryQueueAdapter implements IQueueAdapter {
       }
     }
 
-    // Delayed Execution
-    if (opts?.delay && opts.delay > 0) {
-      const timer = setTimeout(() => {
-        this.timers.delete(timer)
-        void runJob()
-      }, opts.delay)
-      this.timers.add(timer)
-    } else {
-      // Immediate execution in microtask
-      queueMicrotask(() => void runJob())
-    }
-
-    // Repeatable Job (Interval)
+    // Repeatable Job (Interval) — skip immediate execution, only interval
     if (opts?.repeat?.every && opts.repeat.every > 0) {
       const interval = setInterval(() => {
         if (this.isClosed) {
@@ -75,6 +63,16 @@ export class InMemoryQueueAdapter implements IQueueAdapter {
         void runJob()
       }, opts.repeat.every)
       this.timers.add(interval)
+    } else if (opts?.delay && opts.delay > 0) {
+      // Delayed Execution
+      const timer = setTimeout(() => {
+        this.timers.delete(timer)
+        void runJob()
+      }, opts.delay)
+      this.timers.add(timer)
+    } else {
+      // Immediate execution in microtask
+      queueMicrotask(() => void runJob())
     }
 
     return id
