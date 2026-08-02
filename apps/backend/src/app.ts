@@ -134,5 +134,8 @@ const shutdown = async (signal: string) => {
 process.on('SIGTERM', () => void shutdown('SIGTERM'))
 process.on('SIGINT', () => void shutdown('SIGINT'))
 
-export { app }
-export const startPromise = start()
+export { app, start }
+
+if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
+  void start()
+}

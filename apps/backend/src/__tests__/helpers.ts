@@ -1,14 +1,26 @@
-import { startPromise } from '../app.js'
+import { app } from '../app.js'
 
 export const BASE = 'http://127.0.0.1:3000'
+
+let serverBaseUrl: string | null = null
+
+async function getBaseUrl(): Promise<string> {
+  if (serverBaseUrl) return serverBaseUrl
+  try {
+    serverBaseUrl = await app.listen({ port: 0, host: '127.0.0.1' })
+  } catch {
+    serverBaseUrl = 'http://127.0.0.1:3000'
+  }
+  return serverBaseUrl
+}
 
 export async function api(
   path: string,
   options: RequestInit & { token?: string } = {}
 ): Promise<{ status: number; body: unknown }> {
-  await startPromise
+  const baseUrl = await getBaseUrl()
   const { token, headers, ...rest } = options
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${baseUrl}${path}`, {
     headers: {
       // Content-Type только если есть тело — иначе Fastify отклоняет с 400
       ...(rest.body ? { 'Content-Type': 'application/json' } : {}),
