@@ -11,6 +11,7 @@ import underPressurePlugin from './plugins/under-pressure.js'
 import requestContextPlugin from './plugins/request-context.js'
 import staticPlugin from './plugins/static.js'
 import socketPlugin from './plugins/socket.js'
+import queuePlugin from './plugins/queue.js'
 import authRoutes from './modules/auth/auth.routes.js'
 import {
   devicesPublicRoutes,
@@ -18,7 +19,7 @@ import {
 } from './modules/devices/devices.routes.js'
 import { metricsPrivateRoutes } from './modules/metrics/metrics.routes.js'
 import { notificationRoutes } from './modules/notifications/notifications.routes.js'
-import { MetricsService } from './modules/metrics/metrics.service.js'
+import { queueRoutes } from './modules/queue/queue.routes.js'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fs from 'node:fs'
@@ -48,6 +49,7 @@ await app.register(underPressurePlugin)
 await app.register(requestContextPlugin)
 await app.register(staticPlugin)
 await app.register(socketPlugin)
+await app.register(queuePlugin)
 
 // ── API routes ────────────────────────────────────────────────────────────────
 await app.register(authRoutes, { prefix: '/api/auth' })
@@ -55,6 +57,7 @@ await app.register(devicesPublicRoutes, { prefix: '/api/devices' })
 await app.register(devicesPrivateRoutes, { prefix: '/api/devices' })
 await app.register(metricsPrivateRoutes, { prefix: '/api/devices' })
 await app.register(notificationRoutes, { prefix: '/api/notifications' })
+await app.register(queueRoutes, { prefix: '/api/queue' })
 
 // ── Root route & PWA asset handlers ──────────────────────────────────────────
 function resolveViewFile(filename: string): string | null {
@@ -115,12 +118,7 @@ const start = async () => {
       host: '0.0.0.0',
     })
 
-    // Schedule daily metrics retention pruning (keep last 30 days)
-    const metricsService = new MetricsService(app.prisma)
-    metricsService.pruneMetrics(30).catch(err => app.log.warn({ err }, 'Initial metrics pruning error'))
-    setInterval(() => {
-      metricsService.pruneMetrics(30).catch(err => app.log.warn({ err }, 'Daily metrics pruning error'))
-    }, 24 * 60 * 60 * 1000)
+
   } catch (err) {
     app.log.error(err)
     process.exit(1)
@@ -136,4 +134,5 @@ const shutdown = async (signal: string) => {
 process.on('SIGTERM', () => void shutdown('SIGTERM'))
 process.on('SIGINT', () => void shutdown('SIGINT'))
 
-void start()
+export { app }
+export const startPromise = start()

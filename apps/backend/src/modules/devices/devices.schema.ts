@@ -15,6 +15,7 @@ export const SendCommandSchema = z.object({
   pid: z.number().int().optional(),
   commandText: z.string().max(2000).optional(),
   volumePercent: z.number().int().min(0).max(100).optional(),
+  volumeSteps: z.number().int().min(1).max(50).optional(),
   downloadUrl: z.string().url().optional(),
   version: z.string().optional(),
 })

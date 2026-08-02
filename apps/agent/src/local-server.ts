@@ -12,7 +12,7 @@ let isOnline = false
 let pendingLock = false
 let pendingLockMessage: string | null = null
 let pendingLogoff = false
-type VolumeAction = 'UP' | 'DOWN' | 'MUTE'
+type VolumeAction = 'UP' | 'DOWN' | 'MUTE' | (string & {})
 let pendingVolume: VolumeAction | null = null
 let pendingScreenshot = false
 let screenshotResultCb: ((base64: string) => void) | null = null

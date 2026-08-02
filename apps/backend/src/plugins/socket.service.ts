@@ -82,6 +82,23 @@ export class SocketService {
       },
     })
 
+    const rdpUser = activeUsers?.find((u) => u.session === 'rdp' && u.state === 'Active')
+    if (rdpUser) {
+      const device = await this.prisma.device.findUnique({
+        where: { id: deviceId },
+        select: { userId: true, name: true },
+      })
+      if (device?.userId) {
+        this.notificationsService.notifyUser(
+          device.userId,
+          'security.rdp_session',
+          '⚠️ Remote Session Alert',
+          `Active RDP remote desktop session detected on "${device.name}" (User: ${rdpUser.name})`,
+          { deviceId, user: rdpUser.name, session: rdpUser.session }
+        ).catch(() => {})
+      }
+    }
+
     try {
       const currentDaily = await this.prisma.dailyUsage.findUnique({
         where: { deviceId_date: { deviceId, date: today } },
@@ -128,7 +145,7 @@ export class SocketService {
         status: success ? 'executed' : 'failed',
         executedAt: new Date(executedAt),
         error: error ?? null,
-        ...(output !== undefined && { payload: { output } }),
+        output: output ?? null,
       },
     })
 

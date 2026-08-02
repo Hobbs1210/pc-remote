@@ -152,6 +152,7 @@ export default function ControlScreen({ route }: Props) {
   const [lockModal, setLockModal] = useState(false)
   const [lockDurationEnabled, setLockDurationEnabled] = useState(true)
   const [lockDurationMinutes, setLockDurationMinutes] = useState('120')
+  const [volumeStep, setVolumeStep] = useState(3)
 
   const loadSchedule = async () => {
     try {
@@ -388,9 +389,9 @@ export default function ControlScreen({ route }: Props) {
     }
   }
 
-  const executeCommand = async (type: string, delay = 0) => {
+  const executeCommand = async (type: string, delay = 0, steps?: number) => {
     try {
-      const result = await sendCommand(deviceId, type, delay)
+      const result = await sendCommand(deviceId, type, delay, undefined, undefined, undefined, undefined, steps)
       Alert.alert(
         result.delivered ? '✓ Command Sent' : '⚠ Device Offline',
         result.delivered
@@ -464,6 +465,19 @@ export default function ControlScreen({ route }: Props) {
             </View>
 
             {(() => {
+              const activeUsr = device.activeUsers?.find((u) => u.state === 'Active')?.name
+              if (!activeUsr) return null
+              return (
+                <View style={styles.activeUserBox}>
+                  <Text style={styles.activeUserLbl}>SIGNED IN USER</Text>
+                  <Text style={styles.activeUserVal}>
+                    👤 {activeUsr}
+                  </Text>
+                </View>
+              )
+            })()}
+
+            {(() => {
               const activeWin = device.activeWindow
               if (!activeWin || !activeWin.title) return null
               return (
@@ -476,6 +490,11 @@ export default function ControlScreen({ route }: Props) {
                     {activeWin.processName ? (
                       <Text style={styles.activeWindowSubVal}>
                         {activeWin.processName} {activeWin.pid ? `(PID: ${activeWin.pid})` : ''}
+                      </Text>
+                    ) : null}
+                    {activeWin.url ? (
+                      <Text style={styles.activeWinUrl} numberOfLines={1}>
+                        🌐 {activeWin.url}
                       </Text>
                     ) : null}
                   </View>
@@ -525,18 +544,47 @@ export default function ControlScreen({ route }: Props) {
 
       {/* Volume & Utility */}
       <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Volume & Tools</Text>
+
+      {/* Volume Step Selection */}
+      <View style={styles.volumeConfigCard}>
+        <View style={styles.volumeStepRow}>
+          <Text style={styles.volumeStepLabel}>Volume Step Size</Text>
+          <View style={styles.volumeStepOptions}>
+            {[1, 3, 5, 10].map((step) => (
+              <TouchableOpacity
+                key={step}
+                style={[
+                  styles.volumeStepOption,
+                  volumeStep === step && styles.volumeStepOptionActive,
+                ]}
+                onPress={() => setVolumeStep(step)}
+              >
+                <Text
+                  style={[
+                    styles.volumeStepText,
+                    volumeStep === step && styles.volumeStepTextActive,
+                  ]}
+                >
+                  {step}x
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </View>
+
       <View style={styles.cmdGrid}>
         <CommandButton
           label="Vol Down"
           emoji="🔉"
           color="#22d3ee"
-          onPress={() => void executeCommand('VOLUME_DOWN', 0)}
+          onPress={() => void executeCommand('VOLUME_DOWN', 0, volumeStep)}
         />
         <CommandButton
           label="Vol Up"
           emoji="🔊"
           color="#22d3ee"
-          onPress={() => void executeCommand('VOLUME_UP', 0)}
+          onPress={() => void executeCommand('VOLUME_UP', 0, volumeStep)}
         />
         <CommandButton
           label="Terminal"
@@ -1167,4 +1215,58 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
+  volumeConfigCard: {
+    backgroundColor: '#121225',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  volumeStepRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  volumeStepLabel: {
+    color: '#ccc',
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  volumeStepOptions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  volumeStepOption: {
+    backgroundColor: '#0a0a16',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  volumeStepOptionActive: {
+    backgroundColor: 'rgba(34, 211, 238, 0.15)',
+    borderColor: '#22d3ee',
+  },
+  volumeStepText: {
+    color: '#888',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  volumeStepTextActive: {
+    color: '#22d3ee',
+  },
+  activeUserBox: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  activeUserLbl: { color: '#666', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  activeUserVal: { color: '#10b981', fontSize: 13, fontWeight: '600', marginTop: 4 },
+  activeWinUrl: { color: '#38bdf8', fontSize: 11, marginTop: 4, fontWeight: '500' },
 })

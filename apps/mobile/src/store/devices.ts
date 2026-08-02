@@ -35,6 +35,8 @@ export interface ActiveWindow {
   title: string
   processName: string
   pid?: number
+  url?: string
+  browserName?: string
 }
 
 export interface Device {
@@ -81,7 +83,7 @@ interface DevicesState {
   error: string | null
   fetchDevices: () => Promise<void>
   fetchLocalUsers: (deviceId: string) => Promise<void>
-  sendCommand: (deviceId: string, type: string, delaySeconds?: number, pid?: number, message?: string, commandText?: string, volumePercent?: number) => Promise<{ delivered: boolean; command?: { id: string } }>
+  sendCommand: (deviceId: string, type: string, delaySeconds?: number, pid?: number, message?: string, commandText?: string, volumePercent?: number, volumeSteps?: number) => Promise<{ delivered: boolean; command?: { id: string } }>
   showMessage: (deviceId: string, message: string) => Promise<{ delivered: boolean }>
   wakeOnLan: (deviceId: string) => Promise<{ success: boolean; macAddress: string }>
   execTerminal: (deviceId: string, commandText: string) => Promise<{ delivered: boolean; commandId?: string }>
@@ -123,7 +125,7 @@ export const useDevicesStore = create<DevicesState>((set) => ({
     }
   },
 
-  sendCommand: async (deviceId, type, delaySeconds = 0, pid, message, commandText, volumePercent) => {
+  sendCommand: async (deviceId, type, delaySeconds = 0, pid, message, commandText, volumePercent, volumeSteps) => {
     const { data } = await api.post<{ delivered: boolean; command?: { id: string } }>(`/devices/${deviceId}/commands`, {
       type,
       delaySeconds,
@@ -131,6 +133,7 @@ export const useDevicesStore = create<DevicesState>((set) => ({
       message,
       commandText,
       volumePercent,
+      volumeSteps,
     })
     return { delivered: data.delivered, command: data.command }
   },

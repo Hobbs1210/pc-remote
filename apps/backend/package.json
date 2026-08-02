@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "0.0.2",
+  "version": "0.0.22",
   "type": "module",
   "scripts": {
     "predev": "pnpm --filter @pc-remote/shared build",
@@ -28,9 +28,11 @@
     "@pc-remote/shared": "workspace:*",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^6.0.5",
     "dotenv": "^17.4.2",
     "fastify": "^5.11.0",
     "fastify-plugin": "^6.0.0",
+    "ioredis": "^6.0.0",
     "prisma": "^5.22.0",
     "socket.io": "^4.7.5",
     "zod": "^3.23.8"

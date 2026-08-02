@@ -59,21 +59,27 @@ export async function executeCommand(payload: CommandPayload): Promise<string | 
       execSync('rundll32.exe powrprof.dll,SetSuspendState 0,1,0', { windowsHide: true })
       break
 
-    case 'VOLUME_UP':
+    case 'VOLUME_UP': {
+      const steps = payload.volumeSteps ?? 1
+      const action = steps > 1 ? `UP:${steps}` : 'UP'
       if (delaySeconds > 0) {
-        setTimeout(() => setPendingVolume('UP'), delaySeconds * 1000)
+        setTimeout(() => setPendingVolume(action), delaySeconds * 1000)
       } else {
-        setPendingVolume('UP')
+        setPendingVolume(action)
       }
       break
+    }
 
-    case 'VOLUME_DOWN':
+    case 'VOLUME_DOWN': {
+      const steps = payload.volumeSteps ?? 1
+      const action = steps > 1 ? `DOWN:${steps}` : 'DOWN'
       if (delaySeconds > 0) {
-        setTimeout(() => setPendingVolume('DOWN'), delaySeconds * 1000)
+        setTimeout(() => setPendingVolume(action), delaySeconds * 1000)
       } else {
-        setPendingVolume('DOWN')
+        setPendingVolume(action)
       }
       break
+    }
 
     case 'VOLUME_MUTE':
       setPendingVolume('MUTE')

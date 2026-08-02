@@ -146,6 +146,7 @@ model Command {
   sentAt     DateTime?
   executedAt DateTime?
   error      String?
+  output     String?
 
   createdAt  DateTime  @default(now())
 

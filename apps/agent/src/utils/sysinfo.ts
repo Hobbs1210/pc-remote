@@ -27,6 +27,8 @@ export interface ActiveWindow {
   title: string
   processName: string
   pid?: number
+  url?: string
+  browserName?: string
 }
 
 // Bug #16 fix: single SystemInfo interface (removed duplicate at top of file)
@@ -312,7 +314,28 @@ export function getActiveWindow(): ActiveWindow | undefined {
         $pid = 0
         [WinApi]::GetWindowThreadProcessId($hwnd, [ref]$pid) | Out-Null
         $p = Get-Process -Id $pid -ErrorAction SilentlyContinue
-        @{ title = $sb.ToString(); processName = $p.ProcessName; pid = $pid } | ConvertTo-Json -Compress
+        $pName = if ($p) { $p.ProcessName } else { "" }
+        $title = $sb.ToString()
+        $url = ""
+        $browserName = ""
+
+        if ($pName -match "chrome|msedge|firefox|brave|opera|vivaldi") {
+          $browserName = $pName
+          try {
+            Add-Type -AssemblyName UIAutomationClient -ErrorAction SilentlyContinue
+            $elem = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+            $cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)
+            $edit = $elem.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $cond)
+            if ($edit) {
+              $valPattern = $edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
+              if ($valPattern) {
+                $url = $valPattern.Current.Value
+              }
+            }
+          } catch {}
+        }
+
+        @{ title = $title; processName = $pName; pid = $pid; url = $url; browserName = $browserName } | ConvertTo-Json -Compress
       }
     `
     const output = execSync(
@@ -320,12 +343,14 @@ export function getActiveWindow(): ActiveWindow | undefined {
       { encoding: 'utf-8', windowsHide: true }
     )
     if (!output.trim()) return undefined
-    const parsed = JSON.parse(output.trim()) as { title?: string; processName?: string; pid?: number }
+    const parsed = JSON.parse(output.trim()) as { title?: string; processName?: string; pid?: number; url?: string; browserName?: string }
     if (parsed.title || parsed.processName) {
       return {
         title: parsed.title ?? '',
         processName: parsed.processName ?? '',
         ...(parsed.pid !== undefined && { pid: parsed.pid }),
+        ...(parsed.url && { url: parsed.url }),
+        ...(parsed.browserName && { browserName: parsed.browserName }),
       }
     }
   } catch {

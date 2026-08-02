@@ -4,6 +4,7 @@ import crypto from 'node:crypto'
 import dgram from 'node:dgram'
 import bcrypt from 'bcryptjs'
 import { WS_EVENTS } from '@pc-remote/shared'
+import { NotificationsService } from '../notifications/notifications.service.js'
 import type {
   BindDeviceInput,
   SendCommandInput,
@@ -229,6 +230,7 @@ export class DevicesService {
           pid: input.pid,
           commandText: input.commandText,
           volumePercent: input.volumePercent,
+          volumeSteps: input.volumeSteps,
           downloadUrl: input.downloadUrl,
           version: input.version,
         },
@@ -236,7 +238,7 @@ export class DevicesService {
       },
     })
 
-    const delivered = this.app.sendCommand(deviceId, {
+    const payload = {
       commandId: command.id,
       type: input.type,
       delaySeconds: input.delaySeconds,
@@ -244,9 +246,12 @@ export class DevicesService {
       pid: input.pid,
       commandText: input.commandText,
       volumePercent: input.volumePercent,
+      volumeSteps: input.volumeSteps,
       downloadUrl: input.downloadUrl,
       version: input.version,
-    })
+    }
+
+    const delivered = this.app.sendCommand(deviceId, payload)
 
 
     if (delivered) {
@@ -254,14 +259,23 @@ export class DevicesService {
         where: { id: command.id },
         data: { status: 'sent', sentAt: new Date() },
       })
+    } else {
+      void this.app.queue.add(
+        'device-commands',
+        `deliver-${command.id}`,
+        { deviceId, payload, queuedAt: Date.now(), timeoutMs: 15 * 60 * 1000 },
+        {
+          attempts: 15,
+          backoff: 5000,
+          delay: (input.delaySeconds ?? 0) > 0 ? input.delaySeconds! * 1000 : 2000,
+        }
+      )
     }
 
-    await this.prisma.auditLog.create({
-      data: {
-        deviceId,
-        event: 'command_sent',
-        details: { commandId: command.id, type: input.type, delivered, pid: input.pid },
-      },
+    void this.app.queue.add('audit-logs', `audit-${command.id}`, {
+      deviceId,
+      event: 'command_sent',
+      details: { commandId: command.id, type: input.type, delivered, pid: input.pid },
     })
 
     return { command, delivered }
@@ -287,6 +301,17 @@ export class DevicesService {
         }
       })
     )
+
+    if (userId) {
+      const notifService = new NotificationsService(this.prisma)
+      notifService.notifyUser(
+        userId,
+        'security.emergency_lock',
+        '🚨 Emergency Lockdown Triggered',
+        `Lock signal dispatched to ${userDevices.length} registered PC(s).`,
+        { total: userDevices.length }
+      ).catch(() => {})
+    }
 
     return { total: userDevices.length, locked: results.filter((r) => r.delivered).length }
   }

@@ -103,29 +103,35 @@ export default function DevicesScreen() {
       ]
     )
   }, [deleteDevice])
-
-  const renderDevice = useCallback(({ item }: { item: typeof devices[0] }) => (
-    <TouchableOpacity
-      style={[
-        styles.card,
-        numColumns > 1 && { flex: 1, margin: 6 }
-      ]}
-      onPress={() =>
-        navigation.navigate('Control', {
-          deviceId: item.id,
-          deviceName: item.name,
-        })
-      }
-      onLongPress={() => handleLongPress(item)}
-      delayLongPress={400}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.cardTitle}>
-          <StatusDot status={item.status} />
-          <Text style={styles.deviceName}>{item.name}</Text>
+  const renderDevice = useCallback(({ item }: { item: typeof devices[0] }) => {
+    const activeUser = item.activeUsers?.find((u) => u.state === 'Active')?.name
+    return (
+      <TouchableOpacity
+        style={[
+          styles.card,
+          numColumns > 1 && { flex: 1, margin: 6 }
+        ]}
+        onPress={() =>
+          navigation.navigate('Control', {
+            deviceId: item.id,
+            deviceName: item.name,
+          })
+        }
+        onLongPress={() => handleLongPress(item)}
+        delayLongPress={400}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.cardTitle}>
+            <StatusDot status={item.status} />
+            <View>
+              <Text style={styles.deviceName}>{item.name}</Text>
+              {item.status === 'online' && activeUser ? (
+                <Text style={styles.activeUserSub}>👤 {activeUser}</Text>
+              ) : null}
+            </View>
+          </View>
+          <Text style={styles.statusText}>{item.status}</Text>
         </View>
-        <Text style={styles.statusText}>{item.status}</Text>
-      </View>
 
       {item.status === 'online' && (
         <View style={styles.statsContainer}>
@@ -150,7 +156,8 @@ export default function DevicesScreen() {
         </View>
       )}
     </TouchableOpacity>
-  ), [navigation, numColumns, handleLongPress])
+    )
+  }, [navigation, numColumns, handleLongPress])
 
   return (
     <View style={styles.container}>
@@ -229,9 +236,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  cardTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cardTitle: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   dot: { width: 10, height: 10, borderRadius: 5 },
   deviceName: { color: '#fff', fontSize: 17, fontWeight: '600' },
+  activeUserSub: { color: '#10b981', fontSize: 11, marginTop: 2, fontWeight: '500' },
   statusText: { color: '#888', fontSize: 13, textTransform: 'capitalize' },
   statsContainer: { marginTop: 4, gap: 8 },
   usageContainer: { marginVertical: 2 },

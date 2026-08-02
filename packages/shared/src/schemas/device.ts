@@ -36,6 +36,8 @@ export const ActiveWindowSchema = z.object({
   title: z.string(),
   processName: z.string(),
   pid: z.number().int().optional(),
+  url: z.string().optional(),
+  browserName: z.string().optional(),
 })
 
 export type ActiveWindow = z.infer<typeof ActiveWindowSchema>

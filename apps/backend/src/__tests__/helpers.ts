@@ -1,11 +1,12 @@
-// Вспомогательные функции для интеграционных тестов
+import { startPromise } from '../app.js'
 
-export const BASE = 'http://localhost:3000'
+export const BASE = 'http://127.0.0.1:3000'
 
 export async function api(
   path: string,
   options: RequestInit & { token?: string } = {}
 ): Promise<{ status: number; body: unknown }> {
+  await startPromise
   const { token, headers, ...rest } = options
   const res = await fetch(`${BASE}${path}`, {
     headers: {

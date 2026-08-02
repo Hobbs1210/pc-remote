@@ -298,9 +298,16 @@ $timer.Add_Tick({
         # Управление громкостью — сервис в session 0 не имеет доступа к аудио сессии пользователя
         if ($st.pendingVolume) {
             try { Invoke-RestMethod -Uri "$ServerUrl/ack-volume" -Method POST -Headers $th -TimeoutSec 2 | Out-Null } catch {}
-            switch ($st.pendingVolume) {
-                'UP'   { [AudioKeys]::VolumeUp() }
-                'DOWN' { [AudioKeys]::VolumeDown() }
+            $volAction = $st.pendingVolume
+            $steps = 1
+            if ($volAction -like "*:*") {
+                $parts = $volAction -split ':'
+                $volAction = $parts[0]
+                $steps = [int]$parts[1]
+            }
+            switch ($volAction) {
+                'UP'   { 1..$steps | % { [AudioKeys]::VolumeUp() } }
+                'DOWN' { 1..$steps | % { [AudioKeys]::VolumeDown() } }
                 'MUTE' { [AudioKeys]::VolumeMute() }
             }
         }
